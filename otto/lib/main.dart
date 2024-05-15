@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:otto/vistas/canciones/cancionesVista.dart';
+import 'package:otto/vistas/conexion/conexionVista.dart';
 
 /// Flutter code sample for [NavigationBar].
 
@@ -42,27 +44,32 @@ class _NavigationExampleState extends State<NavigationExample> {
           NavigationDestination(
             icon: Icon(Icons.signal_wifi_4_bar_sharp),
             label: 'Conexión',
+            selectedIcon: IconButton(onPressed: null, icon: Icon(Icons.signal_wifi_4_bar_sharp,size:35, color: Color(0xff93479b))),
           ),
           NavigationDestination(
             icon: Icon(
               Icons.audiotrack,
             ),
             label: 'Otto',
+            selectedIcon: IconButton(onPressed: null, icon: Icon(Icons.audiotrack,size:35, color: Color(0xff93479b))),
           ),
           NavigationDestination(
             icon: Icon(
               Icons.info,
             ),
             label: 'Ayuda',
+            selectedIcon: IconButton(onPressed: null, icon: Icon(Icons.info,size:35, color: Color(0xff93479b))),
           ),
         ],
       ),
       body: <Widget>[
         /// Home page
-        Center(child: Text('CONEXIONES', style: theme.textTheme.headlineLarge)),
+        conexionVista(),
+        /// Profile page  
+          
 
         /// Notifications page
-        Center(child: Text('CANCIONES', style: theme.textTheme.headlineLarge)),
+        cancionesVista(),
 
         /// Messages page
         Center(child: Text('AYUDA', style: theme.textTheme.headlineLarge)),
