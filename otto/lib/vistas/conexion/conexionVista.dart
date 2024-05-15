@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:otto/vistas/conexion/cardconexion.dart';
+
 
 class conexionVista extends StatefulWidget {
   const conexionVista({super.key});
@@ -9,13 +9,7 @@ class conexionVista extends StatefulWidget {
 }
 
 class _conexionVistaState extends State<conexionVista> {
-  List<Robot> robots = [
-    Robot("robot1", "Conectado"),
-    Robot("robot2", "Desconectado"),
-    Robot("robot3", "Desconectado"),
-    Robot("robot4", "Desconectado"),
-    Robot("robot5", "Desconectado"),
-  ];
+  
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -62,8 +56,3 @@ class _conexionVistaState extends State<conexionVista> {
   }
 }
 
-class Robot {
-  String nombre;
-  String estado;
-  Robot(this.nombre, this.estado);
-}
