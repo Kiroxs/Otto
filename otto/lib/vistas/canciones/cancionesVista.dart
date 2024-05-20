@@ -27,27 +27,34 @@ class _cancionesVistaState extends State<cancionesVista> {
   void initState() {
     super.initState();
     player.onPlayerStateChanged.listen((state) {
+      if (!mounted) return;
       setState(() {
         isPlaying = state == PlayerState.playing;
         if (state == PlayerState.completed) {
           canciones[index].reproduciendo = false;
         }
-        
       });
     });
 
     player.onDurationChanged.listen((duration) {
+      if (!mounted) return;
       setState(() {
         totalDuration = duration.inMilliseconds.toDouble();
-        
       });
     });
 
     player.onPositionChanged.listen((position) {
+      if (!mounted) return;
       setState(() {
         currentPosition = position.inMilliseconds.toDouble();
       });
     });
+  }
+
+  @override
+  void dispose() {
+    player.dispose();
+    super.dispose();
   }
 
   String formatTime(int milliseconds) {
@@ -199,6 +206,72 @@ class _cancionesVistaState extends State<cancionesVista> {
                 fontWeight: FontWeight.bold,
                 fontSize: 20),
           ),
+          if (canciones[index].reproduciendo)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.skip_previous, color: Color(0xff93479b), size: 40),
+                  color: Color(0xff93479b),
+                  onPressed: () async {
+                    setState(() {
+                      if (index > 0) {
+                        index--;
+                      } else {
+                        index = canciones.length - 1;
+                      }
+                      for (var i = 0; i < canciones.length; i++) {
+                        canciones[i].reproduciendo = false;
+                      }
+                      canciones[index].reproduciendo = true;
+                    });
+                    
+                      await player.stop();
+                      await player.play(AssetSource(canciones[index].url));
+                  },
+                ),
+                SizedBox(width: 20),
+                IconButton(
+                  icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow, color: Color(0xff93479b), size: 40),
+                  color: Color(0xff93479b),
+                  onPressed: () async {
+                    if (isPlaying) {
+                      await player.pause();
+                      setState(() {
+                        canciones[index].reproduciendo = false;
+                        isPlaying = false;
+                      });
+                    } else {
+                      await player.resume();
+                      setState(() {
+                        isPlaying = true;
+                      });
+                    }
+                  },
+                ),
+                SizedBox(width: 20),
+                IconButton(
+                  icon: Icon(Icons.skip_next, color: Color(0xff93479b), size: 40),
+                  color: Color(0xff93479b),
+                  onPressed: () async{
+                    setState(()  {
+                      if (index < canciones.length - 1) {
+                        index++;
+                      } else {
+                        index = 0;
+                      }
+                      for (var i = 0; i < canciones.length; i++) {
+                        canciones[i].reproduciendo = false;
+                      }
+                      canciones[index].reproduciendo = true;
+                      
+                    });
+                    await player.stop();
+                      await player.play(AssetSource(canciones[index].url));
+                  },
+                ),
+              ],
+            ),
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
               activeTrackColor: Color(0xff93479b),
@@ -222,13 +295,14 @@ class _cancionesVistaState extends State<cancionesVista> {
               },
             ),
           ),
-          Text(
-            "${formatTime(currentPosition.toInt())} / ${formatTime(totalDuration.toInt())}",
-            style: TextStyle(
-                color: Color(0xff93479b),
-                fontWeight: FontWeight.bold,
-                fontSize: 20),
-          ),
+          if (canciones[index].reproduciendo)
+            Text(
+              "${formatTime(currentPosition.toInt())} / ${formatTime(totalDuration.toInt())}",
+              style: TextStyle(
+                  color: Color(0xff93479b),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20),
+            ),
         ],
       )),
     );
