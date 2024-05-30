@@ -110,64 +110,66 @@ class _cancionesVistaState extends State<cancionesVista> {
   }
 
   void _showUploadDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    barrierDismissible: true,  // Permite cerrar el diálogo al tocar fuera de él
-    builder: (BuildContext context) {
-      TextEditingController titleController = TextEditingController();
-      TextEditingController descriptionController = TextEditingController();
-      return AlertDialog(
-        title: Text('Cargar Archivo de Audio'),
-        content: SingleChildScrollView(
-          child: ListBody(
-            children: <Widget>[
-              TextField(
-                controller: titleController,
-                decoration: InputDecoration(
-                  hintText: 'Título',
+    showDialog(
+      context: context,
+      barrierDismissible:
+          true, // Permite cerrar el diálogo al tocar fuera de él
+      builder: (BuildContext context) {
+        TextEditingController titleController = TextEditingController();
+        TextEditingController descriptionController = TextEditingController();
+        return AlertDialog(
+          title: Text('Cargar Archivo de Audio'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                TextField(
+                  controller: titleController,
+                  decoration: InputDecoration(
+                    hintText: 'Título',
+                  ),
                 ),
-              ),
-              SizedBox(height: 20),
-              TextField(
-                controller: descriptionController,
-                decoration: InputDecoration(
-                  hintText: 'Descripción',
+                SizedBox(height: 20),
+                TextField(
+                  controller: descriptionController,
+                  decoration: InputDecoration(
+                    hintText: 'Descripción',
+                  ),
                 ),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton.icon(
-                icon: Icon(Icons.folder_open),
-                label: Text('Seleccionar Archivo'),
-                onPressed: () {
-                  _pickFile(); // Método ya definido para seleccionar archivos
-                },
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white, backgroundColor: Color(0xff93479b),
+                SizedBox(height: 20),
+                ElevatedButton.icon(
+                  icon: Icon(Icons.folder_open),
+                  label: Text('Seleccionar Archivo'),
+                  onPressed: () {
+                    _pickFile(); // Método ya definido para seleccionar archivos
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Color(0xff93479b),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            child: Text('Cancelar'),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          TextButton(
-            child: Text('Subir'),
-            onPressed: () {
-              // Aquí puedes implementar la lógica para manejar la subida del archivo
-              // Por ejemplo, podría ser enviar la información a un servidor o guardarla en la lista de canciones
-              Navigator.of(context).pop();
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Subir'),
+              onPressed: () {
+                // Aquí puedes implementar la lógica para manejar la subida del archivo
+                // Por ejemplo, podría ser enviar la información a un servidor o guardarla en la lista de canciones
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -300,8 +302,9 @@ class _cancionesVistaState extends State<cancionesVista> {
                                 padding: EdgeInsets.all(20.0),
                                 child: ElevatedButton(
                                   onPressed: () async {
+                                    // Usar DeviceFileSource para cargar el archivo desde el sistema de archivos
                                     await player.setSource(
-                                        AssetSource(canciones[index].url));
+                                        DeviceFileSource(canciones[index].url));
                                     await player.resume();
                                     setState(() {
                                       for (var i = 0;
