@@ -1,6 +1,9 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:otto/vistas/conexion/conexionVista.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class cancionesVista extends StatefulWidget {
   const cancionesVista({super.key});
@@ -25,7 +28,9 @@ class _cancionesVistaState extends State<cancionesVista> {
 
   @override
   void initState() {
+    
     super.initState();
+    requestPermissions();
     player.onPlayerStateChanged.listen((state) {
       if (!mounted) return;
       setState(() {
@@ -50,13 +55,19 @@ class _cancionesVistaState extends State<cancionesVista> {
       });
     });
   }
-
+  Future<void> requestPermissions() async {
+  var status = await Permission.storage.status;
+  if (!status.isGranted) {
+    await Permission.storage.request();
+  }
+}
   @override
   void dispose() {
     player.dispose();
     super.dispose();
   }
 
+  String? selectedFilePath;
   String formatTime(int milliseconds) {
     int seconds = (milliseconds / 1000).round();
     int minutes = seconds ~/ 60;
@@ -64,247 +75,288 @@ class _cancionesVistaState extends State<cancionesVista> {
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
+  Future<void> _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['mp3'],
+    );
+
+    if (result != null) {
+      PlatformFile file = result.files.first;
+      print(file.name);
+    } else {
+      // User canceled the picker
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+          appBar: AppBar(
+            backgroundColor: Theme.of(context).colorScheme.background,
+            actions: <Widget>[
+              IconButton(
+                icon:
+                    Icon(Icons.file_upload, size: 35, color: Color(0xff93479b)),
+                onPressed: () {
+                  // Acción que se realiza al presionar el botón
+                  _pickFile();
+                },
+              ),
+            ],
+          ),
           body: Column(
-        children: [
-          Expanded(
-            child: GridView.builder(
-                padding: EdgeInsets.all(0),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 1,
-                  crossAxisSpacing: 1,
-                  mainAxisSpacing: 1,
-                  childAspectRatio: 5.0,
-                ),
-                itemCount: canciones.length,
-                itemBuilder: (context, index) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Color(0xff93479b),
-                      borderRadius: BorderRadius.circular(1),
-                      boxShadow: [
-                        BoxShadow(
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
+            children: [
+              Expanded(
+                child: GridView.builder(
+                    padding: EdgeInsets.all(0),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 1,
+                      crossAxisSpacing: 1,
+                      mainAxisSpacing: 1,
+                      childAspectRatio: 5.0,
                     ),
-                    margin: EdgeInsets.symmetric(vertical: 0, horizontal: 0),
-                    padding: EdgeInsets.all(5),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        // Ícono redondo similar a una imagen de perfil
-                        if (canciones[index].reproduciendo)
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color:
-                                  Theme.of(context).colorScheme.inversePrimary,
-                              border: Border.all(
-                                color: Theme.of(context).colorScheme.secondary,
-                                width: 2,
-                              ),
+                    itemCount: canciones.length,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Color(0xff93479b),
+                          borderRadius: BorderRadius.circular(1),
+                          boxShadow: [
+                            BoxShadow(
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
                             ),
-                            child: Center(
-                              child: Icon(
-                                Icons.graphic_eq,
-                                size: 30,
-                                color: Theme.of(context).colorScheme.secondary,
-                              ),
-                            ),
-                          ),
-                        if (!canciones[index].reproduciendo)
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color:
-                                  Theme.of(context).colorScheme.inversePrimary,
-                              border: Border.all(
-                                color: Theme.of(context).colorScheme.secondary,
-                                width: 2,
-                              ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.audiotrack,
-                                size: 30,
-                                color: Theme.of(context).colorScheme.secondary,
-                              ),
-                            ),
-                          ),
-                        SizedBox(width: 26),
-                        Expanded(
-                          child: Text(
-                            canciones[index].nombre,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                          ],
                         ),
-                        SizedBox(height: 10),
+                        margin:
+                            EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+                        padding: EdgeInsets.all(5),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: <Widget>[
+                            // Ícono redondo similar a una imagen de perfil
+                            if (canciones[index].reproduciendo)
+                              Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .inversePrimary,
+                                  border: Border.all(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.graphic_eq,
+                                    size: 30,
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                  ),
+                                ),
+                              ),
+                            if (!canciones[index].reproduciendo)
+                              Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .inversePrimary,
+                                  border: Border.all(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.audiotrack,
+                                    size: 30,
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                  ),
+                                ),
+                              ),
+                            SizedBox(width: 26),
+                            Expanded(
+                              child: Text(
+                                canciones[index].nombre,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 10),
 
-                        if (canciones[index].reproduciendo)
-                          Padding(
-                            padding: EdgeInsets.all(20.0),
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                print("object");
-                                await player.pause();
-                                setState(() {
-                                  canciones[index].reproduciendo = false;
-                                });
-                              },
-                              child: Icon(
-                                Icons.pause,
-                                size: 20,
-                                color: Theme.of(context).colorScheme.secondary,
+                            if (canciones[index].reproduciendo)
+                              Padding(
+                                padding: EdgeInsets.all(20.0),
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    print("object");
+                                    await player.pause();
+                                    setState(() {
+                                      canciones[index].reproduciendo = false;
+                                    });
+                                  },
+                                  child: Icon(
+                                    Icons.pause,
+                                    size: 20,
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        if (!canciones[index].reproduciendo)
-                          Padding(
-                            padding: EdgeInsets.all(20.0),
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                await player.setSource(
-                                    AssetSource(canciones[index].url));
-                                await player.resume();
-                                setState(() {
-                                  for (var i = 0; i < canciones.length; i++) {
-                                    canciones[i].reproduciendo = false;
-                                  }
-                                  this.index = index;
-                                  canciones[index].reproduciendo = true;
-                                });
-                              },
-                              child: Icon(
-                                Icons.play_arrow,
-                                size: 20,
-                                color: Theme.of(context).colorScheme.secondary,
+                            if (!canciones[index].reproduciendo)
+                              Padding(
+                                padding: EdgeInsets.all(20.0),
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    await player.setSource(
+                                        AssetSource(canciones[index].url));
+                                    await player.resume();
+                                    setState(() {
+                                      for (var i = 0;
+                                          i < canciones.length;
+                                          i++) {
+                                        canciones[i].reproduciendo = false;
+                                      }
+                                      this.index = index;
+                                      canciones[index].reproduciendo = true;
+                                    });
+                                  },
+                                  child: Icon(
+                                    Icons.play_arrow,
+                                    size: 20,
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                      ],
+                          ],
+                        ),
+                      );
+                    }),
+              ),
+              Text(
+                canciones[index].nombre,
+                style: TextStyle(
+                    color: Color(0xff93479b),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20),
+              ),
+              if (canciones[index].reproduciendo)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.skip_previous,
+                          color: Color(0xff93479b), size: 40),
+                      color: Color(0xff93479b),
+                      onPressed: () async {
+                        setState(() {
+                          if (index > 0) {
+                            index--;
+                          } else {
+                            index = canciones.length - 1;
+                          }
+                          for (var i = 0; i < canciones.length; i++) {
+                            canciones[i].reproduciendo = false;
+                          }
+                          canciones[index].reproduciendo = true;
+                        });
+
+                        await player.stop();
+                        await player.play(AssetSource(canciones[index].url));
+                      },
                     ),
-                  );
-                }),
-          ),
-          Text(
-            canciones[index].nombre,
-            style: TextStyle(
-                color: Color(0xff93479b),
-                fontWeight: FontWeight.bold,
-                fontSize: 20),
-          ),
-          if (canciones[index].reproduciendo)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.skip_previous, color: Color(0xff93479b), size: 40),
-                  color: Color(0xff93479b),
-                  onPressed: () async {
+                    SizedBox(width: 20),
+                    IconButton(
+                      icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow,
+                          color: Color(0xff93479b), size: 40),
+                      color: Color(0xff93479b),
+                      onPressed: () async {
+                        if (isPlaying) {
+                          await player.pause();
+                          setState(() {
+                            canciones[index].reproduciendo = false;
+                            isPlaying = false;
+                          });
+                        } else {
+                          await player.resume();
+                          setState(() {
+                            isPlaying = true;
+                          });
+                        }
+                      },
+                    ),
+                    SizedBox(width: 20),
+                    IconButton(
+                      icon: Icon(Icons.skip_next,
+                          color: Color(0xff93479b), size: 40),
+                      color: Color(0xff93479b),
+                      onPressed: () async {
+                        setState(() {
+                          if (index < canciones.length - 1) {
+                            index++;
+                          } else {
+                            index = 0;
+                          }
+                          for (var i = 0; i < canciones.length; i++) {
+                            canciones[i].reproduciendo = false;
+                          }
+                          canciones[index].reproduciendo = true;
+                        });
+                        await player.stop();
+                        await player.play(AssetSource(canciones[index].url));
+                      },
+                    ),
+                  ],
+                ),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: Color(0xff93479b),
+                  inactiveTrackColor: Colors.red[100],
+                  trackShape: RoundedRectSliderTrackShape(),
+                  trackHeight: 4.0,
+                  thumbShape: RoundSliderThumbShape(enabledThumbRadius: 12.0),
+                  thumbColor: Color(0xff93479b),
+                  overlayColor: Color(0xff93479b),
+                  overlayShape: RoundSliderOverlayShape(overlayRadius: 28.0),
+                ),
+                child: Slider(
+                  min: 0,
+                  max: totalDuration,
+                  value: currentPosition < totalDuration ? currentPosition : 0,
+                  onChanged: (value) {
                     setState(() {
-                      if (index > 0) {
-                        index--;
-                      } else {
-                        index = canciones.length - 1;
-                      }
-                      for (var i = 0; i < canciones.length; i++) {
-                        canciones[i].reproduciendo = false;
-                      }
-                      canciones[index].reproduciendo = true;
+                      currentPosition = value;
                     });
-                    
-                      await player.stop();
-                      await player.play(AssetSource(canciones[index].url));
+                    player.seek(Duration(milliseconds: value.toInt()));
                   },
                 ),
-                SizedBox(width: 20),
-                IconButton(
-                  icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow, color: Color(0xff93479b), size: 40),
-                  color: Color(0xff93479b),
-                  onPressed: () async {
-                    if (isPlaying) {
-                      await player.pause();
-                      setState(() {
-                        canciones[index].reproduciendo = false;
-                        isPlaying = false;
-                      });
-                    } else {
-                      await player.resume();
-                      setState(() {
-                        isPlaying = true;
-                      });
-                    }
-                  },
+              ),
+              if (canciones[index].reproduciendo)
+                Text(
+                  "${formatTime(currentPosition.toInt())} / ${formatTime(totalDuration.toInt())}",
+                  style: TextStyle(
+                      color: Color(0xff93479b),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20),
                 ),
-                SizedBox(width: 20),
-                IconButton(
-                  icon: Icon(Icons.skip_next, color: Color(0xff93479b), size: 40),
-                  color: Color(0xff93479b),
-                  onPressed: () async{
-                    setState(()  {
-                      if (index < canciones.length - 1) {
-                        index++;
-                      } else {
-                        index = 0;
-                      }
-                      for (var i = 0; i < canciones.length; i++) {
-                        canciones[i].reproduciendo = false;
-                      }
-                      canciones[index].reproduciendo = true;
-                      
-                    });
-                    await player.stop();
-                      await player.play(AssetSource(canciones[index].url));
-                  },
-                ),
-              ],
-            ),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: Color(0xff93479b),
-              inactiveTrackColor: Colors.red[100],
-              trackShape: RoundedRectSliderTrackShape(),
-              trackHeight: 4.0,
-              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 12.0),
-              thumbColor: Color(0xff93479b),
-              overlayColor: Color(0xff93479b),
-              overlayShape: RoundSliderOverlayShape(overlayRadius: 28.0),
-            ),
-            child: Slider(
-              min: 0,
-              max: totalDuration,
-              value: currentPosition < totalDuration ? currentPosition : 0,
-              onChanged: (value) {
-                setState(() {
-                  currentPosition = value;
-                });
-                player.seek(Duration(milliseconds: value.toInt()));
-              },
-            ),
-          ),
-          if (canciones[index].reproduciendo)
-            Text(
-              "${formatTime(currentPosition.toInt())} / ${formatTime(totalDuration.toInt())}",
-              style: TextStyle(
-                  color: Color(0xff93479b),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20),
-            ),
-        ],
-      )),
+            ],
+          )),
     );
   }
 }
