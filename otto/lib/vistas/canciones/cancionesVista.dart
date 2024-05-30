@@ -8,6 +8,8 @@ import 'package:otto/vistas/conexion/conexionVista.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 class cancionesVista extends StatefulWidget {
   const cancionesVista({super.key});
@@ -24,6 +26,7 @@ class _cancionesVistaState extends State<cancionesVista> {
   int duracionMinutos = 0;
   double duracionSegundos = 0;
   int index = 0;
+  List<String> canciones2 = [];
   List<Cancion> canciones = [
     Cancion("musica/cancion1.mp3", "Amar azul - Yo me enamore", false),
     Cancion("musica/cancion2.mp3", "Homero Simpson - Rosa pastel", false),
@@ -56,6 +59,23 @@ class _cancionesVistaState extends State<cancionesVista> {
       setState(() {
         currentPosition = position.inMilliseconds.toDouble();
       });
+    });
+  }
+
+  Future<void> _listMusicFiles() async {
+    final directory =
+        await getApplicationDocumentsDirectory(); // o getExternalStorageDirectory()
+    final List<String> musicFiles = [];
+
+    // Lista todos los archivos en el directorio
+    await for (var entity in directory.list()) {
+      if (entity.path.endsWith('.mp3') || entity.path.endsWith('.wav')) {
+        // Asegúrate de que son archivos de música
+        musicFiles.add(entity.path);
+      }
+    }
+    setState(() {
+      canciones2 = musicFiles;
     });
   }
 
@@ -186,7 +206,21 @@ class _cancionesVistaState extends State<cancionesVista> {
             ],
           ),
           body: Column(
+            
             children: [
+              if(canciones2.length!=0)
+              Text("${canciones2}"),
+              ElevatedButton(
+                onPressed: (){
+                  _listMusicFiles();
+                  }
+                  ,
+                child: Icon(
+                  Icons.graphic_eq,
+                  size: 30,
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+              ),
               Expanded(
                 child: GridView.builder(
                     padding: EdgeInsets.all(0),
