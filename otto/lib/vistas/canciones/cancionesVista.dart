@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:otto/vistas/conexion/conexionVista.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 class cancionesVista extends StatefulWidget {
   const cancionesVista({super.key});
@@ -28,7 +32,6 @@ class _cancionesVistaState extends State<cancionesVista> {
 
   @override
   void initState() {
-    
     super.initState();
     requestPermissions();
     player.onPlayerStateChanged.listen((state) {
@@ -55,12 +58,14 @@ class _cancionesVistaState extends State<cancionesVista> {
       });
     });
   }
+
   Future<void> requestPermissions() async {
-  var status = await Permission.storage.status;
-  if (!status.isGranted) {
-    await Permission.storage.request();
+    var status = await Permission.storage.status;
+    if (!status.isGranted) {
+      await Permission.storage.request();
+    }
   }
-}
+
   @override
   void dispose() {
     player.dispose();
@@ -82,12 +87,87 @@ class _cancionesVistaState extends State<cancionesVista> {
     );
 
     if (result != null) {
-      PlatformFile file = result.files.first;
-      print(file.name);
+      File file = File(result.files.single.path!);
+
+      // Obtener el directorio de documentos de la aplicación
+      Directory appDocDir =
+          await getApplicationDocumentsDirectory(); // Call the correct method to get the application documents directory
+      String appDocPath = appDocDir.path;
+
+      // Copiar el archivo seleccionado al directorio de documentos
+      final newFile =
+          await file.copy('$appDocPath/${result.files.single.name}');
+      print("Archivo guardado en: ${newFile.path}");
+
+      // Aquí puedes actualizar la lista de canciones si es necesario
+      setState(() {
+        canciones.add(Cancion(newFile.path, result.files.single.name, false));
+      });
     } else {
-      // User canceled the picker
+      // Usuario canceló el picker
+      print("Selección de archivo cancelada");
     }
   }
+
+  void _showUploadDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    barrierDismissible: true,  // Permite cerrar el diálogo al tocar fuera de él
+    builder: (BuildContext context) {
+      TextEditingController titleController = TextEditingController();
+      TextEditingController descriptionController = TextEditingController();
+      return AlertDialog(
+        title: Text('Cargar Archivo de Audio'),
+        content: SingleChildScrollView(
+          child: ListBody(
+            children: <Widget>[
+              TextField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  hintText: 'Título',
+                ),
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  hintText: 'Descripción',
+                ),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton.icon(
+                icon: Icon(Icons.folder_open),
+                label: Text('Seleccionar Archivo'),
+                onPressed: () {
+                  _pickFile(); // Método ya definido para seleccionar archivos
+                },
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white, backgroundColor: Color(0xff93479b),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: Text('Cancelar'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: Text('Subir'),
+            onPressed: () {
+              // Aquí puedes implementar la lógica para manejar la subida del archivo
+              // Por ejemplo, podría ser enviar la información a un servidor o guardarla en la lista de canciones
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -99,10 +179,7 @@ class _cancionesVistaState extends State<cancionesVista> {
               IconButton(
                 icon:
                     Icon(Icons.file_upload, size: 35, color: Color(0xff93479b)),
-                onPressed: () {
-                  // Acción que se realiza al presionar el botón
-                  _pickFile();
-                },
+                onPressed: () => _showUploadDialog(context), // Abre el modal
               ),
             ],
           ),
