@@ -102,98 +102,87 @@ class _cancionesVistaState extends State<cancionesVista> {
     }
   }
 
- void _showUploadDialog(BuildContext context) {
+  void _showUploadDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: true, // Permite cerrar el diálogo al tocar fuera de él
+      barrierDismissible:
+          true, // Permite cerrar el diálogo al tocar fuera de él
       builder: (BuildContext context) {
         TextEditingController titleController = TextEditingController();
-        String? selectedGenre; // Variable para guardar el género seleccionado
-
-        // Lista de géneros disponibles
-        List<String> genres = ['reggaeton', 'cumbia', 'pop'];
-
-        return StatefulBuilder( // Añadido para actualizar el estado del diálogo
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text('Cargar Archivo de Audio'),
-              content: SingleChildScrollView(
-                child: ListBody(
-                  children: <Widget>[
-                    TextField(
-                      controller: titleController,
-                      decoration: InputDecoration(
-                        hintText: 'Título',
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    DropdownButton<String>(
-                      value: selectedGenre,
-                      hint: Text('Seleccione un género'), // Mensaje cuando no hay selección
-                      onChanged: (String? newValue) {
-                        setState(() { // Actualiza el estado del diálogo para reflejar la selección
-                          selectedGenre = newValue;
-                        });
-                      },
-                      items: genres.map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      icon: Icon(Icons.folder_open),
-                      label: Text('Seleccionar Archivo'),
-                      onPressed: () {
-                        _pickFile(); // Método ya definido para seleccionar archivos
-                      },
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Color(0xff93479b),
-                      ),
-                    ),
-                  ],
+        TextEditingController descriptionController = TextEditingController();
+        return AlertDialog(
+          title: Text('Cargar Archivo de Audio'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                TextField(
+                  controller: titleController,
+                  decoration: InputDecoration(
+                    hintText: 'Título',
+                  ),
                 ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: Text('Cancelar'),
+                SizedBox(height: 20),
+                TextField(
+                  controller: descriptionController,
+                  decoration: InputDecoration(
+                    hintText: 'Genero',
+                  ),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton.icon(
+                  icon: Icon(Icons.folder_open),
+                  label: Text('Seleccionar Archivo'),
                   onPressed: () {
-                    Navigator.of(context). pop();
+                    _pickFile(); // Método ya definido para seleccionar archivos
                   },
-                ),
-                TextButton(
-                  child: Text('Subir'),
-                  onPressed: () async {
-                    if (tempFilePath != null && selectedGenre != null) {
-                      print("Subiendo archivo desde: $tempFilePath");
-                      File file = File(tempFilePath!);
-                      Directory appDocDir = await getApplicationDocumentsDirectory();
-                      String appDocPath = appDocDir.path;
-                      final newFile = await file.copy('$appDocPath/${Path.basename(tempFilePath!)}');
-                      print("Archivo copiado a: ${newFile.path}");
-
-                      // Agregar la canción al modelo global
-                      Provider.of<CancionesModel>(context, listen: false)
-                          .addCancion(Cancion(newFile.path, titleController.text, false, selectedGenre!));
-                      print("Canción agregada al modelo con título: ${titleController.text} y género: $selectedGenre");
-
-                      Navigator.of(context). pop(); // Cierra el diálogo
-                    } else {
-                      print("No hay archivo seleccionado o no se ha seleccionado un género");
-                    }
-                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Color(0xff93479b),
+                  ),
                 ),
               ],
-            );
-          },
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Subir'),
+              onPressed: () async {
+                if (tempFilePath != null) {
+                  print("Subiendo archivo desde: $tempFilePath");
+                  File file = File(tempFilePath!);
+                  Directory appDocDir =
+                      await getApplicationDocumentsDirectory();
+                  String appDocPath = appDocDir.path;
+                  final newFile = await file
+                      .copy('$appDocPath/${Path.basename(tempFilePath!)}');
+                  print("Archivo copiado a: ${newFile.path}");
+
+                  // Agregar la canción al modelo global
+                  Provider.of<CancionesModel>(context, listen: false)
+                      .addCancion(Cancion(newFile.path, titleController.text,
+                          false, descriptionController.text));
+                  print(
+                      "Canción agregada al modelo con título: ${titleController.text} y género: ${descriptionController.text}");
+
+                  print("Canción agregada al modelo");
+
+                  Navigator.of(context).pop(); // Cierra el diálogo
+                } else {
+                  print("No hay archivo seleccionado");
+                }
+              },
+            ),
+          ],
         );
       },
     );
   }
-
 
   @override
 Widget build(BuildContext context) {
