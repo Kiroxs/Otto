@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as Path;
-
+import 'package:provider/provider.dart';
 
 class cancionesVista extends StatefulWidget {
   const cancionesVista({super.key});
@@ -27,9 +27,12 @@ class _cancionesVistaState extends State<cancionesVista> {
   double duracionSegundos = 0;
   int index = 0;
   List<Cancion> canciones = [
-    Cancion("musica/cancion1.mp3", "Amar azul - Yo me enamore", false),
-    Cancion("musica/cancion2.mp3", "Homero Simpson - Rosa pastel", false),
-    Cancion("musica/cancion3.mp3", "Amar Azul-Tomo Vino y Cerveza", false),
+    Cancion("musica/cancion1.mp3", "Amar azul - Yo me enamore", false,
+        "No especificado"),
+    Cancion("musica/cancion2.mp3", "Homero Simpson - Rosa pastel", false,
+        "No especificado"),
+    Cancion("musica/cancion3.mp3", "Amar Azul-Tomo Vino y Cerveza", false,
+        "No especificado"),
   ];
 
   @override
@@ -122,7 +125,7 @@ class _cancionesVistaState extends State<cancionesVista> {
                 TextField(
                   controller: descriptionController,
                   decoration: InputDecoration(
-                    hintText: 'Descripción',
+                    hintText: 'Genero',
                   ),
                 ),
                 SizedBox(height: 20),
@@ -151,23 +154,23 @@ class _cancionesVistaState extends State<cancionesVista> {
               child: Text('Subir'),
               onPressed: () async {
                 if (tempFilePath != null) {
+                  print("Subiendo archivo desde: $tempFilePath");
                   File file = File(tempFilePath!);
-
-                  // Obtener el directorio de documentos de la aplicación
                   Directory appDocDir =
                       await getApplicationDocumentsDirectory();
                   String appDocPath = appDocDir.path;
-
-                  // Copiar el archivo seleccionado al directorio de documentos
                   final newFile = await file
                       .copy('$appDocPath/${Path.basename(tempFilePath!)}');
-                  print("Archivo guardado en: ${newFile.path}");
+                  print("Archivo copiado a: ${newFile.path}");
 
-                  // Actualizar la lista de canciones
-                  setState(() {
-                    canciones.add(Cancion(
-                        newFile.path, Path.basename(tempFilePath!), false));
-                  });
+                  // Agregar la canción al modelo global
+                  Provider.of<CancionesModel>(context, listen: false)
+                      .addCancion(Cancion(newFile.path, titleController.text,
+                          false, descriptionController.text));
+                  print(
+                      "Canción agregada al modelo con título: ${titleController.text} y género: ${descriptionController.text}");
+
+                  print("Canción agregada al modelo");
 
                   Navigator.of(context).pop(); // Cierra el diálogo
                 } else {
@@ -182,278 +185,238 @@ class _cancionesVistaState extends State<cancionesVista> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-          appBar: AppBar(
-            backgroundColor: Theme.of(context).colorScheme.background,
-            actions: <Widget>[
-              IconButton(
-                icon:
-                    Icon(Icons.file_upload, size: 35, color: Color(0xff93479b)),
-                onPressed: () => _showUploadDialog(context), // Abre el modal
-              ),
-            ],
-          ),
-          body: Column(
-            children: [
-              Expanded(
-                child: GridView.builder(
-                    padding: EdgeInsets.all(0),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 1,
-                      crossAxisSpacing: 1,
-                      mainAxisSpacing: 1,
-                      childAspectRatio: 5.0,
-                    ),
-                    itemCount: canciones.length,
-                    itemBuilder: (context, index) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Color(0xff93479b),
-                          borderRadius: BorderRadius.circular(1),
-                          boxShadow: [
-                            BoxShadow(
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        margin:
-                            EdgeInsets.symmetric(vertical: 0, horizontal: 0),
-                        padding: EdgeInsets.all(5),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            // Ícono redondo similar a una imagen de perfil
-                            if (canciones[index].reproduciendo)
+Widget build(BuildContext context) {
+  return Consumer<CancionesModel>(
+    builder: (context, cancionesModel, child) {
+      return SafeArea(
+        child: Scaffold(
+            appBar: AppBar(
+              backgroundColor: Theme.of(context).colorScheme.background,
+              actions: <Widget>[
+                IconButton(
+                  icon: Icon(Icons.file_upload, size: 35, color: Color(0xff93479b)),
+                  onPressed: () => _showUploadDialog(context), // Abre el modal
+                ),
+              ],
+            ),
+            body: Column(
+              children: [
+                Expanded(
+                  child: GridView.builder(
+                      padding: EdgeInsets.all(0),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 1,
+                        crossAxisSpacing: 1,
+                        mainAxisSpacing: 1,
+                        childAspectRatio: 5.0,
+                      ),
+                      itemCount: cancionesModel.canciones.length,
+                      itemBuilder: (context, index) {
+                        Cancion cancion = cancionesModel.canciones[index];
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Color(0xff93479b),
+                            borderRadius: BorderRadius.circular(1),
+                            boxShadow: [
+                              BoxShadow(
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          margin: EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+                          padding: EdgeInsets.all(5),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: <Widget>[
                               Container(
                                 width: 80,
                                 height: 80,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .inversePrimary,
+                                  color: Theme.of(context).colorScheme.inversePrimary,
                                   border: Border.all(
-                                    color:
-                                        Theme.of(context).colorScheme.secondary,
+                                    color: Theme.of(context).colorScheme.secondary,
                                     width: 2,
                                   ),
                                 ),
                                 child: Center(
                                   child: Icon(
-                                    Icons.graphic_eq,
+                                    cancion.reproduciendo ? Icons.graphic_eq : Icons.audiotrack,
                                     size: 30,
-                                    color:
-                                        Theme.of(context).colorScheme.secondary,
+                                    color: Theme.of(context).colorScheme.secondary,
                                   ),
                                 ),
                               ),
-                            if (!canciones[index].reproduciendo)
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .inversePrimary,
-                                  border: Border.all(
-                                    color:
-                                        Theme.of(context).colorScheme.secondary,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Icon(
-                                    Icons.audiotrack,
-                                    size: 30,
-                                    color:
-                                        Theme.of(context).colorScheme.secondary,
+                              SizedBox(width: 26),
+                              Expanded(
+                                child: Text(
+                                  cancion.nombre,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),
-                            SizedBox(width: 26),
-                            Expanded(
-                              child: Text(
-                                canciones[index].nombre,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                              IconButton(
+                                icon: Icon(
+                                  cancion.reproduciendo ? Icons.pause : Icons.play_arrow,
+                                  color: Theme.of(context).colorScheme.secondary,
                                 ),
-                              ),
-                            ),
-                            SizedBox(height: 10),
-
-                            if (canciones[index].reproduciendo)
-                              Padding(
-                                padding: EdgeInsets.all(20.0),
-                                child: ElevatedButton(
-                                  onPressed: () async {
-                                    print("object");
+                                onPressed: () async {
+                                  if (cancion.reproduciendo) {
                                     await player.pause();
-                                    setState(() {
-                                      canciones[index].reproduciendo = false;
-                                    });
-                                  },
-                                  child: Icon(
-                                    Icons.pause,
-                                    size: 20,
-                                    color:
-                                        Theme.of(context).colorScheme.secondary,
-                                  ),
-                                ),
-                              ),
-                            if (!canciones[index].reproduciendo)
-                              Padding(
-                                padding: EdgeInsets.all(20.0),
-                                child: ElevatedButton(
-                                  onPressed: () async {
-                                    // Usar DeviceFileSource para cargar el archivo desde el sistema de archivos
-                                    await player.setSource(
-                                        DeviceFileSource(canciones[index].url));
+                                    cancionesModel.updateReproduciendo(cancion, false);
+                                  } else {
+                                    await player.setSource(DeviceFileSource(cancion.url));
                                     await player.resume();
-                                    setState(() {
-                                      for (var i = 0;
-                                          i < canciones.length;
-                                          i++) {
-                                        canciones[i].reproduciendo = false;
-                                      }
-                                      this.index = index;
-                                      canciones[index].reproduciendo = true;
-                                    });
-                                  },
-                                  child: Icon(
-                                    Icons.play_arrow,
-                                    size: 20,
-                                    color:
-                                        Theme.of(context).colorScheme.secondary,
-                                  ),
-                                ),
+                                    cancionesModel.updateAllReproduciendo(false);
+                                    cancionesModel.updateReproduciendo(cancion, true);
+                                  }
+                                },
                               ),
-                          ],
-                        ),
-                      );
-                    }),
-              ),
-              Text(
-                canciones[index].nombre,
-                style: TextStyle(
-                    color: Color(0xff93479b),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20),
-              ),
-              if (canciones[index].reproduciendo)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.skip_previous,
-                          color: Color(0xff93479b), size: 40),
-                      color: Color(0xff93479b),
-                      onPressed: () async {
-                        setState(() {
-                          if (index > 0) {
-                            index--;
-                          } else {
-                            index = canciones.length - 1;
-                          }
-                          for (var i = 0; i < canciones.length; i++) {
-                            canciones[i].reproduciendo = false;
-                          }
-                          canciones[index].reproduciendo = true;
-                        });
+                            ],
+                          ),
+                        );
+                      }),
+                ),
+                if (cancionesModel.canciones.isNotEmpty && cancionesModel.canciones.any((c) => c.reproduciendo))
+                  buildPlayerControls(cancionesModel, context),
+              ],
+            )),
+      );
+    },
+  );
+}
 
-                        await player.stop();
-                        await player.play(AssetSource(canciones[index].url));
-                      },
-                    ),
-                    SizedBox(width: 20),
-                    IconButton(
-                      icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow,
-                          color: Color(0xff93479b), size: 40),
-                      color: Color(0xff93479b),
-                      onPressed: () async {
-                        if (isPlaying) {
-                          await player.pause();
-                          setState(() {
-                            canciones[index].reproduciendo = false;
-                            isPlaying = false;
-                          });
-                        } else {
-                          await player.resume();
-                          setState(() {
-                            isPlaying = true;
-                          });
-                        }
-                      },
-                    ),
-                    SizedBox(width: 20),
-                    IconButton(
-                      icon: Icon(Icons.skip_next,
-                          color: Color(0xff93479b), size: 40),
-                      color: Color(0xff93479b),
-                      onPressed: () async {
-                        setState(() {
-                          if (index < canciones.length - 1) {
-                            index++;
-                          } else {
-                            index = 0;
-                          }
-                          for (var i = 0; i < canciones.length; i++) {
-                            canciones[i].reproduciendo = false;
-                          }
-                          canciones[index].reproduciendo = true;
-                        });
-                        await player.stop();
-                        await player.play(AssetSource(canciones[index].url));
-                      },
-                    ),
-                  ],
-                ),
-              SliderTheme(
-                data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: Color(0xff93479b),
-                  inactiveTrackColor: Colors.red[100],
-                  trackShape: RoundedRectSliderTrackShape(),
-                  trackHeight: 4.0,
-                  thumbShape: RoundSliderThumbShape(enabledThumbRadius: 12.0),
-                  thumbColor: Color(0xff93479b),
-                  overlayColor: Color(0xff93479b),
-                  overlayShape: RoundSliderOverlayShape(overlayRadius: 28.0),
-                ),
-                child: Slider(
-                  min: 0,
-                  max: totalDuration,
-                  value: currentPosition < totalDuration ? currentPosition : 0,
-                  onChanged: (value) {
-                    setState(() {
-                      currentPosition = value;
-                    });
-                    player.seek(Duration(milliseconds: value.toInt()));
-                  },
-                ),
-              ),
-              if (canciones[index].reproduciendo)
-                Text(
-                  "${formatTime(currentPosition.toInt())} / ${formatTime(totalDuration.toInt())}",
-                  style: TextStyle(
-                      color: Color(0xff93479b),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20),
-                ),
-            ],
-          )),
-    );
+Widget buildPlayerControls(CancionesModel cancionesModel, BuildContext context) {
+  if (index < 0 || index >= cancionesModel.canciones.length) {
+    return SizedBox.shrink();  // No hay canción seleccionada o índice fuera de rango
   }
+
+  Cancion currentSong = cancionesModel.canciones[index];
+
+  return Column(
+    children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Text(
+          currentSong.nombre,
+          style: TextStyle(
+            color: Color(0xff93479b),
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+      ),
+      SliderTheme(
+        data: SliderTheme.of(context).copyWith(
+          activeTrackColor: Color(0xff93479b),
+          inactiveTrackColor: Colors.red[100],
+          trackShape: RoundedRectSliderTrackShape(),
+          trackHeight: 4.0,
+          thumbShape: RoundSliderThumbShape(enabledThumbRadius: 12.0),
+          thumbColor: Color(0xff93479b),
+          overlayColor: Color(0xff93479b),
+          overlayShape: RoundSliderOverlayShape(overlayRadius: 28.0),
+        ),
+        child: Slider(
+          min: 0,
+          max: totalDuration,
+          value: currentPosition < totalDuration ? currentPosition : 0,
+          onChanged: (value) {
+            setState(() {
+              currentPosition = value;
+            });
+            player.seek(Duration(milliseconds: value.toInt()));
+          },
+        ),
+      ),
+      Text(
+        "${formatTime(currentPosition.toInt())} / ${formatTime(totalDuration.toInt())}",
+        style: TextStyle(
+          color: Color(0xff93479b),
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
+        ),
+      ),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: Icon(Icons.skip_previous, color: Color(0xff93479b), size: 40),
+            onPressed: () => changeTrack(cancionesModel, index - 1 < 0 ? cancionesModel.canciones.length - 1 : index - 1),
+          ),
+          IconButton(
+            icon: Icon(currentSong.reproduciendo ? Icons.pause : Icons.play_arrow, color: Color(0xff93479b), size: 40),
+            onPressed: () {
+              if (currentSong.reproduciendo) {
+                player.pause();
+                cancionesModel.updateReproduciendo(currentSong, false);
+              } else {
+                player.setSource(DeviceFileSource(currentSong.url));
+                player.resume();
+                cancionesModel.updateReproduciendo(currentSong, true);
+              }
+              setState(() {
+                isPlaying = !isPlaying;
+              });
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.skip_next, color: Color(0xff93479b), size: 40),
+            onPressed: () => changeTrack(cancionesModel, index + 1 >= cancionesModel.canciones.length ? 0 : index + 1),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+
+void changeTrack(CancionesModel cancionesModel, int newIndex) {
+  setState(() {
+    var currentIndex = newIndex;  // Actualizar el índice actual
+    cancionesModel.updateAllReproduciendo(false);
+    cancionesModel.updateReproduciendo(cancionesModel.canciones[newIndex], true);
+    player.stop();
+    player.setSource(DeviceFileSource(cancionesModel.canciones[newIndex].url));
+    player.resume();
+  });
+}
+
 }
 
 class Cancion {
   String nombre;
   String url;
   bool reproduciendo;
-  Cancion(this.url, this.nombre, this.reproduciendo);
+  String genero; // Añadido para guardar el género de la canción
+  Cancion(this.url, this.nombre, this.reproduciendo, this.genero);
+}
+
+class CancionesModel extends ChangeNotifier {
+  List<Cancion> _canciones = [];
+
+  List<Cancion> get canciones => _canciones;
+
+  void addCancion(Cancion cancion) {
+    _canciones.add(cancion);
+    notifyListeners();
+  }
+  void updateReproduciendo(Cancion cancion, bool reproduciendo) {
+    int index = _canciones.indexOf(cancion);
+    if (index != -1) {
+      _canciones[index].reproduciendo = reproduciendo;
+      notifyListeners();
+    }
+  }
+
+  void updateAllReproduciendo(bool reproduciendo) {
+    for (var cancion in _canciones) {
+      cancion.reproduciendo = reproduciendo;
+    }
+    notifyListeners();
+  }
 }
