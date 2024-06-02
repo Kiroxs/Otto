@@ -8,6 +8,8 @@ import 'package:otto/vistas/conexion/conexionVista.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as Path;
+
 
 class cancionesVista extends StatefulWidget {
   const cancionesVista({super.key});
@@ -80,6 +82,8 @@ class _cancionesVistaState extends State<cancionesVista> {
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
+  String? tempFilePath; // Variable temporal para almacenar la ruta del archivo
+
   Future<void> _pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -87,25 +91,11 @@ class _cancionesVistaState extends State<cancionesVista> {
     );
 
     if (result != null) {
-      File file = File(result.files.single.path!);
-
-      // Obtener el directorio de documentos de la aplicación
-      Directory appDocDir =
-          await getApplicationDocumentsDirectory(); // Call the correct method to get the application documents directory
-      String appDocPath = appDocDir.path;
-
-      // Copiar el archivo seleccionado al directorio de documentos
-      final newFile =
-          await file.copy('$appDocPath/${result.files.single.name}');
-      print("Archivo guardado en: ${newFile.path}");
-
-      // Aquí puedes actualizar la lista de canciones si es necesario
-      setState(() {
-        canciones.add(Cancion(newFile.path, result.files.single.name, false));
-      });
+      tempFilePath = result.files.single.path; // Solo guarda la ruta aquí
+      print("Archivo seleccionado: $tempFilePath");
     } else {
-      // Usuario canceló el picker
       print("Selección de archivo cancelada");
+      tempFilePath = null;
     }
   }
 
@@ -159,10 +149,30 @@ class _cancionesVistaState extends State<cancionesVista> {
             ),
             TextButton(
               child: Text('Subir'),
-              onPressed: () {
-                // Aquí puedes implementar la lógica para manejar la subida del archivo
-                // Por ejemplo, podría ser enviar la información a un servidor o guardarla en la lista de canciones
-                Navigator.of(context).pop();
+              onPressed: () async {
+                if (tempFilePath != null) {
+                  File file = File(tempFilePath!);
+
+                  // Obtener el directorio de documentos de la aplicación
+                  Directory appDocDir =
+                      await getApplicationDocumentsDirectory();
+                  String appDocPath = appDocDir.path;
+
+                  // Copiar el archivo seleccionado al directorio de documentos
+                  final newFile = await file
+                      .copy('$appDocPath/${Path.basename(tempFilePath!)}');
+                  print("Archivo guardado en: ${newFile.path}");
+
+                  // Actualizar la lista de canciones
+                  setState(() {
+                    canciones.add(Cancion(
+                        newFile.path, Path.basename(tempFilePath!), false));
+                  });
+
+                  Navigator.of(context).pop(); // Cierra el diálogo
+                } else {
+                  print("No hay archivo seleccionado");
+                }
               },
             ),
           ],
