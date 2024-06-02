@@ -292,7 +292,7 @@ Widget build(BuildContext context) {
 
 Widget buildPlayerControls(CancionesModel cancionesModel, BuildContext context) {
   if (index < 0 || index >= cancionesModel.canciones.length) {
-    return SizedBox.shrink();  // No hay canción seleccionada o índice fuera de rango
+    return const SizedBox.shrink();  // No hay canción seleccionada o índice fuera de rango
   }
 
   Cancion currentSong = cancionesModel.canciones[index];
@@ -342,22 +342,28 @@ Widget buildPlayerControls(CancionesModel cancionesModel, BuildContext context) 
         ),
       ),
       Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           IconButton(
-            icon: Icon(Icons.skip_previous, color: Color(0xff93479b), size: 40),
-            onPressed: () => changeTrack(cancionesModel, index - 1 < 0 ? cancionesModel.canciones.length - 1 : index - 1),
+            icon: Icon(Icons.skip_previous),
+            iconSize: 45,
+            color: Color(0xff93479b),
+            onPressed: () {
+              if (index > 0) {
+                index--;
+                changeTrack(cancionesModel, index);
+              }
+            },
           ),
           IconButton(
-            icon: Icon(currentSong.reproduciendo ? Icons.pause : Icons.play_arrow, color: Color(0xff93479b), size: 40),
+            icon: isPlaying ? Icon(Icons.pause_circle_filled) : Icon(Icons.play_circle_filled),
+            iconSize: 45,
+            color: Color(0xff93479b),
             onPressed: () {
-              if (currentSong.reproduciendo) {
+              if (isPlaying) {
                 player.pause();
-                cancionesModel.updateReproduciendo(currentSong, false);
               } else {
-                player.setSource(DeviceFileSource(currentSong.url));
                 player.resume();
-                cancionesModel.updateReproduciendo(currentSong, true);
               }
               setState(() {
                 isPlaying = !isPlaying;
@@ -365,8 +371,15 @@ Widget buildPlayerControls(CancionesModel cancionesModel, BuildContext context) 
             },
           ),
           IconButton(
-            icon: Icon(Icons.skip_next, color: Color(0xff93479b), size: 40),
-            onPressed: () => changeTrack(cancionesModel, index + 1 >= cancionesModel.canciones.length ? 0 : index + 1),
+            icon: Icon(Icons.skip_next),
+            iconSize: 45,
+            color: Color(0xff93479b),
+            onPressed: () {
+              if (index < cancionesModel.canciones.length - 1) {
+                index++;
+                changeTrack(cancionesModel, index);
+              }
+            },
           ),
         ],
       ),
