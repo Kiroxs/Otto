@@ -10,6 +10,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as Path;
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class cancionesVista extends StatefulWidget {
   const cancionesVista({super.key});
@@ -39,6 +40,8 @@ class _cancionesVistaState extends State<cancionesVista> {
   void initState() {
     super.initState();
     requestPermissions();
+    loadCanciones();
+
     player.onPlayerStateChanged.listen((state) {
       if (!mounted) return;
       setState(() {
@@ -62,6 +65,17 @@ class _cancionesVistaState extends State<cancionesVista> {
         currentPosition = position.inMilliseconds.toDouble();
       });
     });
+  }
+
+  Future<void> loadCanciones() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> cancionesString = prefs.getStringList('canciones') ?? [];
+    List<Cancion> loadedCanciones = cancionesString.map((cancionString) {
+      List<String> parts = cancionString.split(',');
+      return Cancion(parts[1], parts[0], false, parts[2]);
+    }).toList();
+    Provider.of<CancionesModel>(context, listen: false)
+        .setCanciones(loadedCanciones);
   }
 
   Future<void> requestPermissions() async {
@@ -102,314 +116,328 @@ class _cancionesVistaState extends State<cancionesVista> {
     }
   }
 
-void _showUploadDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    barrierDismissible: true, // Permite cerrar el diálogo al tocar fuera de él
-    builder: (BuildContext context) {
-      TextEditingController titleController = TextEditingController();
-      String? selectedGenre = 'reggaeton'; // Variable para almacenar el género seleccionado inicialmente
+  void _showUploadDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible:
+          true, // Permite cerrar el diálogo al tocar fuera de él
+      builder: (BuildContext context) {
+        TextEditingController titleController = TextEditingController();
+        String? selectedGenre =
+            'reggaeton'; // Variable para almacenar el género seleccionado inicialmente
 
-      return StatefulBuilder( // Agregado para manejar estado dentro del diálogo
-        builder: (BuildContext context, StateSetter setState) {
-          return AlertDialog(
-            title: Text('Cargar Archivo de Audio'),
-            content: SingleChildScrollView(
-              child: ListBody(
-                children: <Widget>[
-                  TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(
-                      hintText: 'Título',
+        return StatefulBuilder(
+          // Agregado para manejar estado dentro del diálogo
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: Text('Cargar Archivo de Audio'),
+              content: SingleChildScrollView(
+                child: ListBody(
+                  children: <Widget>[
+                    TextField(
+                      controller: titleController,
+                      decoration: InputDecoration(
+                        hintText: 'Título',
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 20),
-                  DropdownButton<String>(
-                    value: selectedGenre,
-                    icon: const Icon(Icons.arrow_downward),
-                    elevation: 16,
-                    style: const TextStyle(color: Color(0xff93479b)),
-                    underline: Container(
-                      height: 2,
-                      color: Color(0xff93479b),
+                    SizedBox(height: 20),
+                    DropdownButton<String>(
+                      value: selectedGenre,
+                      icon: const Icon(Icons.arrow_downward),
+                      elevation: 16,
+                      style: const TextStyle(color: Color(0xff93479b)),
+                      underline: Container(
+                        height: 2,
+                        color: Color(0xff93479b),
+                      ),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          // Aquí se actualiza el estado local del diálogo
+                          selectedGenre = newValue;
+                        });
+                      },
+                      items: <String>['reggaeton', 'pop', 'cumbia']
+                          .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
                     ),
-                    onChanged: (String? newValue) {
-                      setState(() { // Aquí se actualiza el estado local del diálogo
-                        selectedGenre = newValue;
-                      });
-                    },
-                    items: <String>['reggaeton', 'pop', 'cumbia']
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    icon: Icon(Icons.folder_open),
-                    label: Text('Seleccionar Archivo'),
-                    onPressed: () {
-                      _pickFile(); // Método ya definido para seleccionar archivos
-                    },
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      backgroundColor: Color(0xff93479b),
+                    SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      icon: Icon(Icons.folder_open),
+                      label: Text('Seleccionar Archivo'),
+                      onPressed: () {
+                        _pickFile(); // Método ya definido para seleccionar archivos
+                      },
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Color(0xff93479b),
+                      ),
                     ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: Text('Cancelar'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: Text('Subir'),
+                  onPressed: () async {
+                    if (tempFilePath != null) {
+                      File file = File(tempFilePath!);
+                      Directory appDocDir =
+                          await getApplicationDocumentsDirectory();
+                      String appDocPath = appDocDir.path;
+                      final newFile = await file
+                          .copy('$appDocPath/${Path.basename(tempFilePath!)}');
+                      Provider.of<CancionesModel>(context, listen: false)
+                          .addCancion(Cancion(newFile.path,
+                              titleController.text, false, selectedGenre!));
+                      Navigator.of(context).pop(); // Cierra el diálogo
+                    } else {
+                      print("No hay archivo seleccionado");
+                    }
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<CancionesModel>(
+      builder: (context, cancionesModel, child) {
+        return SafeArea(
+          child: Scaffold(
+              appBar: AppBar(
+                backgroundColor: Theme.of(context).colorScheme.background,
+                actions: <Widget>[
+                  IconButton(
+                    icon: Icon(Icons.file_upload,
+                        size: 35, color: Color(0xff93479b)),
+                    onPressed: () =>
+                        _showUploadDialog(context), // Abre el modal
                   ),
                 ],
               ),
-            ),
-            actions: <Widget>[
-              TextButton(
-                child: Text('Cancelar'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-              TextButton(
-                child: Text('Subir'),
-                onPressed: () async {
-                  if (tempFilePath != null) {
-                    File file = File(tempFilePath!);
-                    Directory appDocDir =
-                        await getApplicationDocumentsDirectory();
-                    String appDocPath = appDocDir.path;
-                    final newFile = await file
-                        .copy('$appDocPath/${Path.basename(tempFilePath!)}');
-                    Provider.of<CancionesModel>(context, listen: false)
-                        .addCancion(Cancion(newFile.path, titleController.text,
-                            false, selectedGenre!));
-                    Navigator.of(context).pop(); // Cierra el diálogo
-                  } else {
-                    print("No hay archivo seleccionado");
-                  }
-                },
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
-
-  @override
-Widget build(BuildContext context) {
-  return Consumer<CancionesModel>(
-    builder: (context, cancionesModel, child) {
-      return SafeArea(
-        child: Scaffold(
-            appBar: AppBar(
-              backgroundColor: Theme.of(context).colorScheme.background,
-              actions: <Widget>[
-                IconButton(
-                  icon: Icon(Icons.file_upload, size: 35, color: Color(0xff93479b)),
-                  onPressed: () => _showUploadDialog(context), // Abre el modal
-                ),
-              ],
-            ),
-            body: Column(
-              children: [
-                Expanded(
-                  child: GridView.builder(
-                      padding: EdgeInsets.all(0),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 1,
-                        crossAxisSpacing: 1,
-                        mainAxisSpacing: 1,
-                        childAspectRatio: 5.0,
-                      ),
-                      itemCount: cancionesModel.canciones.length,
-                      itemBuilder: (context, index) {
-                        Cancion cancion = cancionesModel.canciones[index];
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: Color(0xff93479b),
-                            borderRadius: BorderRadius.circular(1),
-                            boxShadow: [
-                              BoxShadow(
-                                blurRadius: 4,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          margin: EdgeInsets.symmetric(vertical: 0, horizontal: 0),
-                          padding: EdgeInsets.all(5),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: <Widget>[
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Theme.of(context).colorScheme.inversePrimary,
-                                  border: Border.all(
-                                    color: Theme.of(context).colorScheme.secondary,
-                                    width: 2,
-                                  ),
+              body: Column(
+                children: [
+                  Expanded(
+                    child: GridView.builder(
+                        padding: EdgeInsets.all(0),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 1,
+                          crossAxisSpacing: 1,
+                          mainAxisSpacing: 1,
+                          childAspectRatio: 5.0,
+                        ),
+                        itemCount: cancionesModel.canciones.length,
+                        itemBuilder: (context, index) {
+                          Cancion cancion = cancionesModel.canciones[index];
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Color(0xff93479b),
+                              borderRadius: BorderRadius.circular(1),
+                              boxShadow: [
+                                BoxShadow(
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
                                 ),
-                                child: Center(
-                                  child: Icon(
-                                    cancion.reproduciendo ? Icons.graphic_eq : Icons.audiotrack,
-                                    size: 30,
-                                    color: Theme.of(context).colorScheme.secondary,
-                                  ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Container(
+                                          width: 80,
+                                          height: 80,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .inversePrimary,
+                                            border: Border.all(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .secondary,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Icon(
+                                              cancion.reproduciendo
+                                                  ? Icons.graphic_eq
+                                                  : Icons.audiotrack,
+                                              size: 30,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .secondary,
+                                            ),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 30.0, vertical: 0),
+                                          child: Column(
+                                            children: [
+                                              Text(
+                                                cancion.nombre,
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              Text(
+                                                cancion.genero,
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  ],
                                 ),
-                              ),
-                              SizedBox(width: 26),
-                              Expanded(
-                                child: Text(
-                                  cancion.nombre,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  cancion.reproduciendo ? Icons.pause : Icons.play_arrow,
-                                  color: Theme.of(context).colorScheme.secondary,
-                                ),
-                                onPressed: () async {
-                                  if (cancion.reproduciendo) {
-                                    await player.pause();
-                                    cancionesModel.updateReproduciendo(cancion, false);
-                                  } else {
-                                    await player.setSource(DeviceFileSource(cancion.url));
-                                    await player.resume();
-                                    cancionesModel.updateAllReproduciendo(false);
-                                    cancionesModel.updateReproduciendo(cancion, true);
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                ),
-                if (cancionesModel.canciones.isNotEmpty && cancionesModel.canciones.any((c) => c.reproduciendo))
-                  buildPlayerControls(cancionesModel, context),
-              ],
-            )),
-      );
-    },
-  );
-}
-
-Widget buildPlayerControls(CancionesModel cancionesModel, BuildContext context) {
-  if (index < 0 || index >= cancionesModel.canciones.length) {
-    return const SizedBox.shrink();  // No hay canción seleccionada o índice fuera de rango
+                                Column(
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        cancion.reproduciendo
+                                            ? Icons.pause
+                                            : Icons.play_arrow,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .secondary,
+                                      ),
+                                      onPressed: () async {
+                                        this.index = index;
+                                        if (cancion.reproduciendo) {
+                                          await player.pause();
+                                          setState(() {
+                                            cancionesModel.updateReproduciendo(
+                                                cancion, false);
+                                          });
+                                        } else {
+                                          await player.setSource(
+                                              DeviceFileSource(cancion.url));
+                                          await player.resume();
+                                          setState(() {
+                                            cancionesModel
+                                                .updateAllReproduciendo(false);
+                                            cancionesModel.updateReproduciendo(
+                                                cancion, true);
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ), 
+                          );
+                        }),
+                  ),
+                  if (cancionesModel.canciones.isNotEmpty &&
+                      cancionesModel.canciones.any((c) => c.reproduciendo))
+                    buildPlayerControls(cancionesModel, context, this.index),
+                ],
+              )),
+        );
+      },
+    );
   }
 
-  Cancion currentSong = cancionesModel.canciones[index];
+  Widget buildPlayerControls(
+      CancionesModel cancionesModel, BuildContext context, int index) {
+    if (index < 0 || index >= cancionesModel.canciones.length) {
+      return const SizedBox
+          .shrink(); // No hay canción seleccionada o índice fuera de rango
+    }
 
-  return Column(
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Text(
-          currentSong.nombre,
+    Cancion currentSong = cancionesModel.canciones[index];
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(
+            currentSong.nombre,
+            style: TextStyle(
+              color: Color(0xff93479b),
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+        ),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: Color(0xff93479b),
+            inactiveTrackColor: Colors.red[100],
+            trackShape: RoundedRectSliderTrackShape(),
+            trackHeight: 4.0,
+            thumbShape: RoundSliderThumbShape(enabledThumbRadius: 12.0),
+            thumbColor: Color(0xff93479b),
+            overlayColor: Color(0xff93479b),
+            overlayShape: RoundSliderOverlayShape(overlayRadius: 28.0),
+          ),
+          child: Slider(
+            min: 0,
+            max: totalDuration,
+            value: currentPosition < totalDuration ? currentPosition : 0,
+            onChanged: (value) {
+              setState(() {
+                currentPosition = value;
+              });
+              player.seek(Duration(milliseconds: value.toInt()));
+            },
+          ),
+        ),
+        Text(
+          "${formatTime(currentPosition.toInt())} / ${formatTime(totalDuration.toInt())}",
           style: TextStyle(
             color: Color(0xff93479b),
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
         ),
-      ),
-      SliderTheme(
-        data: SliderTheme.of(context).copyWith(
-          activeTrackColor: Color(0xff93479b),
-          inactiveTrackColor: Colors.red[100],
-          trackShape: RoundedRectSliderTrackShape(),
-          trackHeight: 4.0,
-          thumbShape: RoundSliderThumbShape(enabledThumbRadius: 12.0),
-          thumbColor: Color(0xff93479b),
-          overlayColor: Color(0xff93479b),
-          overlayShape: RoundSliderOverlayShape(overlayRadius: 28.0),
-        ),
-        child: Slider(
-          min: 0,
-          max: totalDuration,
-          value: currentPosition < totalDuration ? currentPosition : 0,
-          onChanged: (value) {
-            setState(() {
-              currentPosition = value;
-            });
-            player.seek(Duration(milliseconds: value.toInt()));
-          },
-        ),
-      ),
-      Text(
-        "${formatTime(currentPosition.toInt())} / ${formatTime(totalDuration.toInt())}",
-        style: TextStyle(
-          color: Color(0xff93479b),
-          fontWeight: FontWeight.bold,
-          fontSize: 20,
-        ),
-      ),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          IconButton(
-            icon: Icon(Icons.skip_previous),
-            iconSize: 45,
-            color: Color(0xff93479b),
-            onPressed: () {
-              if (index > 0) {
-                index--;
-                changeTrack(cancionesModel, index);
-              }
-            },
-          ),
-          IconButton(
-            icon: isPlaying ? Icon(Icons.pause_circle_filled) : Icon(Icons.play_circle_filled),
-            iconSize: 45,
-            color: Color(0xff93479b),
-            onPressed: () {
-              if (isPlaying) {
-                player.pause();
-              } else {
-                player.resume();
-              }
-              setState(() {
-                isPlaying = !isPlaying;
-              });
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.skip_next),
-            iconSize: 45,
-            color: Color(0xff93479b),
-            onPressed: () {
-              if (index < cancionesModel.canciones.length - 1) {
-                index++;
-                changeTrack(cancionesModel, index);
-              }
-            },
-          ),
-        ],
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
-
-void changeTrack(CancionesModel cancionesModel, int newIndex) {
-  setState(() {
-    var currentIndex = newIndex;  // Actualizar el índice actual
-    cancionesModel.updateAllReproduciendo(false);
-    cancionesModel.updateReproduciendo(cancionesModel.canciones[newIndex], true);
-    player.stop();
-    player.setSource(DeviceFileSource(cancionesModel.canciones[newIndex].url));
-    player.resume();
-  });
-}
-
+  void changeTrack(CancionesModel cancionesModel, int newIndex) {
+    setState(() {
+      var currentIndex = newIndex; // Actualizar el índice actual
+      cancionesModel.updateAllReproduciendo(false);
+      cancionesModel.updateReproduciendo(
+          cancionesModel.canciones[newIndex], true);
+      player.stop();
+      player
+          .setSource(DeviceFileSource(cancionesModel.canciones[newIndex].url));
+      player.resume();
+    });
+  }
 }
 
 class Cancion {
@@ -425,16 +453,31 @@ class CancionesModel extends ChangeNotifier {
 
   List<Cancion> get canciones => _canciones;
 
-  void addCancion(Cancion cancion) {
+  Future<void> addCancion(Cancion cancion) async {
     _canciones.add(cancion);
+    await saveCancionesToPrefs();
     notifyListeners();
   }
+
   void updateReproduciendo(Cancion cancion, bool reproduciendo) {
     int index = _canciones.indexOf(cancion);
     if (index != -1) {
       _canciones[index].reproduciendo = reproduciendo;
       notifyListeners();
     }
+  }
+
+  void setCanciones(List<Cancion> newCanciones) {
+    _canciones = newCanciones;
+    notifyListeners();
+  }
+
+  Future<void> saveCancionesToPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> cancionesString = _canciones
+        .map((cancion) => '${cancion.nombre},${cancion.url},${cancion.genero}')
+        .toList();
+    await prefs.setStringList('canciones', cancionesString);
   }
 
   void updateAllReproduciendo(bool reproduciendo) {
