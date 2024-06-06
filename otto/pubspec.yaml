@@ -14,7 +14,10 @@ dependencies:
   flutter:
     sdk: flutter
   shared_preferences: ^2.2.3
-  bluetooth_classic: ^0.0.1
+
+  plugin_platform_interface: ^2.1.8
+  flutter_blue_classic: ^0.0.2
+  
   
   
 dev_dependencies:
