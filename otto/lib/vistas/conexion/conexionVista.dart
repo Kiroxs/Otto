@@ -3,8 +3,11 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_blue_classic/flutter_blue_classic.dart';
+import 'package:otto/vistas/canciones/cancionesVista.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 
 class conexionVista extends StatefulWidget {
   const conexionVista({super.key});
@@ -21,10 +24,12 @@ class _conexionVistaState extends State<conexionVista> {
 
   final Set<BluetoothDevice> _scanResults = {};
   StreamSubscription? _scanSubscription;
-
+  TextEditingController _controller = TextEditingController();
   bool _isScanning = false;
   StreamSubscription? _scanningStateSubscription;
   BluetoothConnection? connection;
+  late bool prueba;
+  List<String> pasos = ["MOVE 1 2000","MOVE 1 2000","MOVE 2 2000","MOVE 2 2000","MOVE 18 2000","MOVE 4 2000","MOVE 9 2000 100"];
   @override
   void initState() {
     super.initState();
@@ -34,7 +39,7 @@ class _conexionVistaState extends State<conexionVista> {
 
   Future<void> initPlatformState() async {
     BluetoothAdapterState adapterState = _adapterState;
-
+    
     try {
       adapterState = await _flutterBlueClassicPlugin.adapterStateNow;
       _adapterStateSubscription =
@@ -54,6 +59,8 @@ class _conexionVistaState extends State<conexionVista> {
     }
 
     if (!mounted) return;
+
+    
 
     setState(() {
       _adapterState = adapterState;
@@ -83,20 +90,28 @@ class _conexionVistaState extends State<conexionVista> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (connection != null && connection!.isConnected)
-                ElevatedButton(
-                    onPressed: () async {
-                      try {
-                        if (connection!.isConnected) {
-                          connection?.output
-                              .add(utf8.encode("MOVE 18 1000 15" + "\r\n"));
+              
+              ElevatedButton(
+                  onPressed: () async {
+                   
+                    
+                   
+                    try {
+                        if(connection != null && connection!.isConnected){
+                        
+                        for (var paso in pasos) {
+                          connection?.output.add(utf8.encode(paso + "\r\n"));
+                          
                           await connection?.output.allSent;
+                          await Future.delayed(Duration(milliseconds: 4000));
+                          print("Paso: " + paso);
                         }
-                      } catch (e) {
-                        if (kDebugMode) print(e);
-                      }
-                    },
-                    child: Text("Mover")),
+                     }
+                    } catch (e) {
+                      if (kDebugMode) print(e);
+                    }
+                  },
+                  child: Text("BAILAR")),
               Container(
                 width: 150,
                 height: 150,
@@ -113,10 +128,13 @@ class _conexionVistaState extends State<conexionVista> {
                     try {
                       setState(() async {
                         connection = await _flutterBlueClassicPlugin
-                          .connect("98:D3:71:FE:5A:9A");
+                            .connect("98:D3:71:FE:5A:9A");
                       });
                       if (!this.context.mounted) return;
                       if (connection != null && connection!.isConnected) {
+                        await Provider.of<CancionesModel>(context, listen: false).setConnection(connection!);
+                        Provider.of<CancionesModel>(context, listen: true)
+                            .setConnection(connection!);
                         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                             const SnackBar(
                                 content: Text("Connected to device")));
