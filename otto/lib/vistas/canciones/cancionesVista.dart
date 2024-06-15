@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
@@ -28,8 +29,14 @@ class _cancionesVistaState extends State<cancionesVista> {
   double totalDuration = 0;
   int duracionMinutos = 0;
   double duracionSegundos = 0;
+  String textoPrueba = "PASO";
+  double tiempodelpasito = 0;
+  bool isBailando = false;
+  double terminapaso = 0;
   int index = 0;
-  BluetoothConnection? connection;
+  int paso = 0;
+  var random = Random();
+
   List<Cancion> canciones = [
     Cancion("musica/cancion1.mp3", "Amar azul - Yo me enamore", false,
         "No especificado"),
@@ -38,39 +45,45 @@ class _cancionesVistaState extends State<cancionesVista> {
     Cancion("musica/cancion3.mp3", "Amar Azul-Tomo Vino y Cerveza", false,
         "No especificado"),
   ];
-  List<String> CUMBIANENA = [
-    "MOVE 14 2 500 50",
-    "MOVE 14 2 500 50",
-    "MOVE 15 2 500 100",
-    "MOVE 15 2 500 100",
-    "MOVE 17 1 500 100",
-    "MOVE 17 1 500 100",
-    "MOVE 13 2 2000 5",
-    "MOVE 13 2 2000 5",
-    "MOVE 14 3 1000 10",
-    "MOVE 14 3 1000 10",
-    "MOVE 7 3 1000 30",
-    "MOVE 7 3 1000 30",
-    "MOVE 6 3 1000 30",
-    "MOVE 6 3 1000 30",
-    "MOVE 19 3 1000 30",
-    "MOVE 19 3 1000 30",
-    "MOVE 9 1 2000 30",
-    "MOVE 13 2 2000 5",
-    "MOVE 13 2 2000 5"
-    
+  List<String> pasos = [
+    "MOVE 0 1 1000 25",
+    "MOVE 1 3 1000 25",
+    "MOVE 2 3 1000 25",
+    "MOVE 4 10 1000 25",
+    "MOVE 5 1 1000 25",
+    "MOVE 6 4 1000 25",
+    "MOVE 7 4 1000 25",
+    "MOVE 8 2 1000 30",
+    "MOVE 9 4 1000 25",
+    "MOVE 10 4 1000 25",
+    "MOVE 11 1 500 30",
+    "MOVE 12 10 1000 20",
+    "MOVE 13 10 1000 20",
+    "MOVE 14 5 1000 50",
+    "MOVE 15 2 500 50",
+    "MOVE 16 2 500 50",
+    "MOVE 17 1 2000",
+    "MOVE 18 1 2000",
+    "MOVE 19 3 500 50",
+    "MOVE 20 5 500 100"
   ];
   @override
   void initState() {
     super.initState();
     requestPermissions();
     loadCanciones();
-
+    if (!mounted) return;
+    BluetoothConnection? connection =
+        Provider.of<CancionesModel>(context, listen: false).connection;
     player.onPlayerStateChanged.listen((state) {
       if (!mounted) return;
       setState(() {
         isPlaying = state == PlayerState.playing;
         if (state == PlayerState.completed) {
+          isBailando == false;
+          tiempodelpasito = 0;
+          terminapaso = 0;
+          currentPosition= 0;
           canciones[index].reproduciendo = false;
         }
       });
@@ -78,7 +91,6 @@ class _cancionesVistaState extends State<cancionesVista> {
 
     player.onDurationChanged.listen((duration) {
       if (!mounted) return;
-
       setState(() {
         totalDuration = duration.inMilliseconds.toDouble();
       });
@@ -89,6 +101,32 @@ class _cancionesVistaState extends State<cancionesVista> {
       setState(() {
         currentPosition = position.inMilliseconds.toDouble();
       });
+
+      if (
+          isBailando == false &&
+          currentPosition > terminapaso) {
+        setState(() {
+          paso = random.nextInt(21);
+          isBailando == true;
+          tiempodelpasito = position.inMilliseconds.toDouble();
+          terminapaso = tiempodelpasito +
+              (int.parse(pasos[paso].split(" ")[2]) + 1) *
+                  (int.parse(pasos[paso].split(" ")[3]));
+        });
+        print((int.parse(pasos[paso].split(" ")[2]) + 1) *
+            (int.parse(pasos[paso].split(" ")[3])));
+       
+        connection!.output.add(utf8.encode(pasos[paso] + "\r\n"));
+        connection!.output.allSent;
+        setState(() {
+          isBailando == false;
+        });
+      }
+      if (currentPosition > terminapaso) {
+        setState(() {
+          isBailando == false;
+        });
+      }
     });
   }
 
@@ -257,6 +295,7 @@ class _cancionesVistaState extends State<cancionesVista> {
               ),
               body: Column(
                 children: [
+                  Text(textoPrueba, style: TextStyle(fontSize: 30)),
                   if (Provider.of<CancionesModel>(context, listen: false)
                           .connection ==
                       null)
@@ -264,7 +303,7 @@ class _cancionesVistaState extends State<cancionesVista> {
                         child: Text("NECESITAS CONECTARTE",
                             style: TextStyle(
                                 fontSize: 30, color: Color(0xff93479b)))),
-                  if(Provider.of<CancionesModel>(context, listen: false)
+                  /* if(Provider.of<CancionesModel>(context, listen: false)
                                 .connection!=null)
                   ElevatedButton(
                       onPressed: () async {
@@ -274,159 +313,157 @@ class _cancionesVistaState extends State<cancionesVista> {
 
                         try {
                           if (connection != null) {
-                            for (var paso in CUMBIANENA) {
+                            for (var paso in pasos) {
                               connection?.output
                                   .add(utf8.encode(paso + "\r\n"));
                                   await connection?.output.allSent;
-
-                             
-                              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                                  SnackBar(content: Text("Paso" + paso)));
-                              print(
-                                  ((int.parse(paso.split(" ")[2]))*(int.parse(paso.split(" ")[3]))));
                                   
                               await Future.delayed(Duration(
                                   milliseconds:
-                                      (int.parse(paso.split(" ")[2]))*(int.parse(paso.split(" ")[3]))));
+                                      (int.parse(paso.split(" ")[2])+1)*(int.parse(paso.split(" ")[3]))));
+                              setState(() {
+                                textoPrueba = paso;
+                              });
+                              
+                                  
+                              
                               print("Paso: " + paso);
+
+                             
                             }
                           }
                         } catch (e) {
                           if (kDebugMode) print(e);
                         }
                       },
-                      child: Text("BAILAR")),
-                  /* Expanded(
-                      child: GridView.builder(
-                          padding: EdgeInsets.all(0),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 1,
-                            crossAxisSpacing: 1,
-                            mainAxisSpacing: 1,
-                            childAspectRatio: 5.0,
-                          ),
-                          itemCount: cancionesModel.canciones.length,
-                          itemBuilder: (context, index) {
-                            Cancion cancion = cancionesModel.canciones[index];
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: Color(0xff93479b),
-                                borderRadius: BorderRadius.circular(1),
-                                boxShadow: [
-                                  BoxShadow(
-                                    blurRadius: 4,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Container(
-                                            width: 80,
-                                            height: 80,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
+                      child: Text("BAILAR")), */
+                  Expanded(
+                    child: GridView.builder(
+                        padding: EdgeInsets.all(0),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 1,
+                          crossAxisSpacing: 1,
+                          mainAxisSpacing: 1,
+                          childAspectRatio: 5.0,
+                        ),
+                        itemCount: cancionesModel.canciones.length,
+                        itemBuilder: (context, index) {
+                          Cancion cancion = cancionesModel.canciones[index];
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Color(0xff93479b),
+                              borderRadius: BorderRadius.circular(1),
+                              boxShadow: [
+                                BoxShadow(
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Container(
+                                          width: 80,
+                                          height: 80,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .inversePrimary,
+                                            border: Border.all(
                                               color: Theme.of(context)
                                                   .colorScheme
-                                                  .inversePrimary,
-                                              border: Border.all(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .secondary,
-                                                width: 2,
-                                              ),
-                                            ),
-                                            child: Center(
-                                              child: Icon(
-                                                cancion.reproduciendo
-                                                    ? Icons.graphic_eq
-                                                    : Icons.audiotrack,
-                                                size: 30,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .secondary,
-                                              ),
+                                                  .secondary,
+                                              width: 2,
                                             ),
                                           ),
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 30.0, vertical: 0),
-                                            child: Column(
-                                              children: [
-                                                Text(
-                                                  cancion.nombre,
-                                                  style: TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  cancion.genero,
-                                                  style: TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ],
+                                          child: Center(
+                                            child: Icon(
+                                              cancion.reproduciendo
+                                                  ? Icons.graphic_eq
+                                                  : Icons.audiotrack,
+                                              size: 30,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .secondary,
                                             ),
                                           ),
-                                        ],
-                                      )
-                                    ],
-                                  ),
-                                  Column(
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(
-                                          cancion.reproduciendo
-                                              ? Icons.pause
-                                              : Icons.play_arrow,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .secondary,
                                         ),
-                                        onPressed: () async {
-                                          this.index = index;
-                                          if (cancion.reproduciendo) {
-                                            await player.pause();
-                                            setState(() {
-                                              cancionesModel
-                                                  .updateReproduciendo(
-                                                      cancion, false);
-                                            });
-                                          } else {
-                                            await player.setSource(
-                                                DeviceFileSource(cancion.url));
-                                            await player.resume();
-                                            setState(() {
-                                              cancionesModel
-                                                  .updateAllReproduciendo(
-                                                      false);
-                                              cancionesModel
-                                                  .updateReproduciendo(
-                                                      cancion, true);
-                                            });
-                                          }
-                                        },
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 30.0, vertical: 0),
+                                          child: Column(
+                                            children: [
+                                              Text(
+                                                cancion.nombre,
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              Text(
+                                                cancion.genero,
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ),
+                                Column(
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        cancion.reproduciendo
+                                            ? Icons.pause
+                                            : Icons.play_arrow,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .secondary,
                                       ),
-                                    ],
-                                  )
-                                ],
-                              ),
-                            );
-                          }),
-                    ), */
+                                      onPressed: () async {
+                                        this.index = index;
+                                        if (cancion.reproduciendo) {
+                                          await player.pause();
+                                          setState(() {
+                                            cancionesModel.updateReproduciendo(
+                                                cancion, false);
+                                          });
+                                        } else {
+                                          await player.setSource(
+                                              DeviceFileSource(cancion.url));
+                                          await player.resume();
+                                          setState(() {
+                                            cancionesModel
+                                                .updateAllReproduciendo(false);
+                                            cancionesModel.updateReproduciendo(
+                                                cancion, true);
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ),
+                          );
+                        }),
+                  ),
                   if (cancionesModel.canciones.isNotEmpty &&
                       cancionesModel.canciones.any((c) => c.reproduciendo))
                     buildPlayerControls(cancionesModel, context, this.index),
@@ -475,10 +512,7 @@ class _cancionesVistaState extends State<cancionesVista> {
             max: totalDuration,
             value: currentPosition < totalDuration ? currentPosition : 0,
             onChanged: (value) {
-              setState(() {
-                currentPosition = value;
-              });
-              player.seek(Duration(milliseconds: value.toInt()));
+              
             },
           ),
         ),

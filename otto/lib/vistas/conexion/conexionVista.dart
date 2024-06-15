@@ -72,6 +72,7 @@ class _conexionVistaState extends State<conexionVista> {
     _adapterStateSubscription?.cancel();
     _scanSubscription?.cancel();
     _scanningStateSubscription?.cancel();
+    
     super.dispose();
   }
 
@@ -125,7 +126,7 @@ class _conexionVistaState extends State<conexionVista> {
                 ),
                 child: ElevatedButton(
                   onPressed: () async {
-                    try {
+                    try { 
                       setState(() async {
                         connection = await _flutterBlueClassicPlugin
                             .connect("98:D3:71:FE:5A:9A");
