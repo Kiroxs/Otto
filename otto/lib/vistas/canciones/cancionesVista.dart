@@ -30,6 +30,7 @@ class _cancionesVistaState extends State<cancionesVista> {
   int duracionMinutos = 0;
   double duracionSegundos = 0;
   String textoPrueba = "PASO";
+  String genero = "";
   double tiempodelpasito = 0;
   bool isBailando = false;
   double terminapaso = 0;
@@ -38,15 +39,10 @@ class _cancionesVistaState extends State<cancionesVista> {
   int numeropaso = 0;
   var random = Random();
 
-  List<Cancion> canciones = [
-    Cancion("musica/cancion1.mp3", "Amar azul - Yo me enamore", false,
-        "No especificado"),
-    Cancion("musica/cancion2.mp3", "Homero Simpson - Rosa pastel", false,
-        "No especificado"),
-    Cancion("musica/cancion3.mp3", "Amar Azul-Tomo Vino y Cerveza", false,
-        "No especificado"),
-  ];
-  List<String> pasos = [
+ 
+  List<String> pasos = [];
+
+  List<String> cumbia = [
     "MOVE 8 3 1000 30",
     "MOVE 9 3 1000 30",
     "MOVE 4 1 1000 30",
@@ -67,8 +63,46 @@ class _cancionesVistaState extends State<cancionesVista> {
     "MOVE 17 1 1000 30",
     "MOVE 18 1 1000 30",
     "MOVE 8 3 1000 30",
-    
   ];
+  List<String> pop = [
+    "MOVE 6 3 1000 30",
+    "MOVE 7 3 1000 30",
+    "MOVE 5 3 1000 30",
+    "MOVE 9 3 1000 30",
+    "MOVE 10 3 1000 30",
+    "MOVE 11 1 1000 30",
+    "MOVE 17 1 1000 30",
+    "MOVE 18 1 1000 30",
+    "MOVE 20 3 1000 30",
+    "MOVE 15 1 1000 30",
+    "MOVE 16 1 1000 30",
+    "MOVE 19 1 1000 30",
+    "MOVE 12 1 1000 30",
+    "MOVE 13 1 1000 30",
+    "MOVE 14 2 1000 30",
+    "MOVE 3 1 1000 30",
+    "MOVE 4 1 1000 30",
+  ];
+  List<String> reggeton = [
+    "MOVE 3 1 1000 30",
+    "MOVE 4 1 1000 30",
+    "MOVE 5 3 1000 30",
+    "MOVE 12 1 1000 30",
+    "MOVE 13 1 1000 30",
+    "MOVE 11 2 1000 30",
+    "MOVE 15 1 1000 30",
+    "MOVE 16 1 1000 30",
+    "MOVE 20 3 1000 30",
+    "MOVE 6 3 1000 30",
+    "MOVE 7 3 1000 30",
+    "MOVE 11 1 1000 30",
+    "MOVE 17 1 1000 30",
+    "MOVE 18 1 1000 30",
+    "MOVE 20 3 1000 30",
+    "MOVE 6 3 1000 30",
+    "MOVE 7 3 1000 30",
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -86,7 +120,7 @@ class _cancionesVistaState extends State<cancionesVista> {
           tiempodelpasito = 0;
           terminapaso = 0;
           currentPosition = 0;
-          canciones[index].reproduciendo = false;
+         
           paso = 0;
         }
       });
@@ -109,13 +143,14 @@ class _cancionesVistaState extends State<cancionesVista> {
         setState(() {
           isBailando == true;
           tiempodelpasito = position.inMilliseconds.toDouble();
-          terminapaso = 200+tiempodelpasito +
+          terminapaso = 200 +
+              tiempodelpasito +
               (int.parse(pasos[paso].split(" ")[2])) *
                   (int.parse(pasos[paso].split(" ")[3]));
         });
         print((int.parse(pasos[paso].split(" ")[2]) + 1) *
             (int.parse(pasos[paso].split(" ")[3])));
-
+        textoPrueba = pasos[paso];
         connection!.output.add(utf8.encode(pasos[paso] + "\r\n"));
         connection!.output.allSent;
         setState(() {
@@ -300,8 +335,7 @@ class _cancionesVistaState extends State<cancionesVista> {
               ),
               body: Column(
                 children: [
-                  Text(textoPrueba + " ${paso}",
-                      style: TextStyle(fontSize: 30)),
+                  
                   if (Provider.of<CancionesModel>(context, listen: false)
                           .connection ==
                       null)
@@ -309,40 +343,6 @@ class _cancionesVistaState extends State<cancionesVista> {
                         child: Text("NECESITAS CONECTARTE",
                             style: TextStyle(
                                 fontSize: 30, color: Color(0xff93479b)))),
-                  /* if(Provider.of<CancionesModel>(context, listen: false)
-                                .connection!=null)
-                  ElevatedButton(
-                      onPressed: () async {
-                        BluetoothConnection? connection =
-                            Provider.of<CancionesModel>(context, listen: false)
-                                .connection;
-
-                        try {
-                          if (connection != null) {
-                            for (var paso in pasos) {
-                              connection?.output
-                                  .add(utf8.encode(paso + "\r\n"));
-                                  await connection?.output.allSent;
-                                  
-                              await Future.delayed(Duration(
-                                  milliseconds:
-                                      (int.parse(paso.split(" ")[2])+1)*(int.parse(paso.split(" ")[3]))));
-                              setState(() {
-                                textoPrueba = paso;
-                              });
-                              
-                                  
-                              
-                              print("Paso: " + paso);
-
-                             
-                            }
-                          }
-                        } catch (e) {
-                          if (kDebugMode) print(e);
-                        }
-                      },
-                      child: Text("BAILAR")), */
                   Expanded(
                     child: GridView.builder(
                         padding: EdgeInsets.all(0),
@@ -435,6 +435,7 @@ class _cancionesVistaState extends State<cancionesVista> {
                                   children: [
                                     IconButton(
                                       icon: Icon(
+                                        size: 30,
                                         cancion.reproduciendo
                                             ? Icons.pause
                                             : Icons.play_arrow,
@@ -451,10 +452,27 @@ class _cancionesVistaState extends State<cancionesVista> {
                                                 cancion, false);
                                           });
                                         } else {
+                                          await player.stop();
                                           await player.setSource(
                                               DeviceFileSource(cancion.url));
                                           await player.resume();
                                           setState(() {
+                                            cancion.genero;
+                                            if (cancion.genero == "cumbia") {
+                                              pasos = cumbia;
+                                            } else if (cancion.genero ==
+                                                "pop") {
+                                              pasos = pop;
+                                            } else if (cancion.genero ==
+                                                "reggaeton") {
+                                              pasos = reggeton;
+                                            }
+                                            isBailando == false;
+                                            tiempodelpasito = 0;
+                                            terminapaso = 0;
+                                            currentPosition = 0;
+                                           
+                                            paso = 0;
                                             cancionesModel
                                                 .updateAllReproduciendo(false);
                                             cancionesModel.updateReproduciendo(
