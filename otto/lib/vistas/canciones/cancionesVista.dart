@@ -35,6 +35,7 @@ class _cancionesVistaState extends State<cancionesVista> {
   double terminapaso = 0;
   int index = 0;
   int paso = 0;
+  int numeropaso = 0;
   var random = Random();
 
   List<Cancion> canciones = [
@@ -46,26 +47,27 @@ class _cancionesVistaState extends State<cancionesVista> {
         "No especificado"),
   ];
   List<String> pasos = [
-    "MOVE 0 1 1000 25",
-    "MOVE 1 3 1000 25",
-    "MOVE 2 3 1000 25",
-    "MOVE 4 10 1000 25",
-    "MOVE 5 1 1000 25",
-    "MOVE 6 4 1000 25",
-    "MOVE 7 4 1000 25",
-    "MOVE 8 2 1000 30",
-    "MOVE 9 4 1000 25",
-    "MOVE 10 4 1000 25",
-    "MOVE 11 1 500 30",
-    "MOVE 12 10 1000 20",
-    "MOVE 13 10 1000 20",
-    "MOVE 14 5 1000 50",
-    "MOVE 15 2 500 50",
-    "MOVE 16 2 500 50",
-    "MOVE 17 1 2000",
-    "MOVE 18 1 2000",
-    "MOVE 19 3 500 50",
-    "MOVE 20 5 500 100"
+    "MOVE 8 3 1000 30",
+    "MOVE 9 3 1000 30",
+    "MOVE 4 1 1000 30",
+    "MOVE 10 3 1000 30",
+    "MOVE 4 1 1000 30",
+    "MOVE 1 1 1000 30",
+    "MOVE 11 1 1000 30",
+    "MOVE 2 1 1000 30",
+    "MOVE 6 3 1000 30",
+    "MOVE 7 3 1000 30",
+    "MOVE 5 3 1000 30",
+    "MOVE 20 3 1000 30",
+    "MOVE 8 3 1000 30",
+    "MOVE 9 1 1000 30",
+    "MOVE 13 1 1000 30",
+    "MOVE 10 3 1000 30",
+    "MOVE 13 1 1000 30",
+    "MOVE 17 1 1000 30",
+    "MOVE 18 1 1000 30",
+    "MOVE 8 3 1000 30",
+    
   ];
   @override
   void initState() {
@@ -83,8 +85,9 @@ class _cancionesVistaState extends State<cancionesVista> {
           isBailando == false;
           tiempodelpasito = 0;
           terminapaso = 0;
-          currentPosition= 0;
+          currentPosition = 0;
           canciones[index].reproduciendo = false;
+          paso = 0;
         }
       });
     });
@@ -102,23 +105,25 @@ class _cancionesVistaState extends State<cancionesVista> {
         currentPosition = position.inMilliseconds.toDouble();
       });
 
-      if (
-          isBailando == false &&
-          currentPosition > terminapaso) {
+      if (isBailando == false && currentPosition > terminapaso) {
         setState(() {
-          paso = random.nextInt(21);
           isBailando == true;
           tiempodelpasito = position.inMilliseconds.toDouble();
-          terminapaso = tiempodelpasito +
-              (int.parse(pasos[paso].split(" ")[2]) + 1) *
+          terminapaso = 200+tiempodelpasito +
+              (int.parse(pasos[paso].split(" ")[2])) *
                   (int.parse(pasos[paso].split(" ")[3]));
         });
         print((int.parse(pasos[paso].split(" ")[2]) + 1) *
             (int.parse(pasos[paso].split(" ")[3])));
-       
+
         connection!.output.add(utf8.encode(pasos[paso] + "\r\n"));
         connection!.output.allSent;
         setState(() {
+          if (paso < pasos.length - 1) {
+            paso++;
+          } else {
+            paso = 0;
+          }
           isBailando == false;
         });
       }
@@ -295,7 +300,8 @@ class _cancionesVistaState extends State<cancionesVista> {
               ),
               body: Column(
                 children: [
-                  Text(textoPrueba, style: TextStyle(fontSize: 30)),
+                  Text(textoPrueba + " ${paso}",
+                      style: TextStyle(fontSize: 30)),
                   if (Provider.of<CancionesModel>(context, listen: false)
                           .connection ==
                       null)
@@ -511,9 +517,7 @@ class _cancionesVistaState extends State<cancionesVista> {
             min: 0,
             max: totalDuration,
             value: currentPosition < totalDuration ? currentPosition : 0,
-            onChanged: (value) {
-              
-            },
+            onChanged: (value) {},
           ),
         ),
         Text(
