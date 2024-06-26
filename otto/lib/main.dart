@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:otto/vistas/ayuda/ayudaprincipal.dart';
 import 'package:otto/vistas/canciones/cancionesVista.dart';
 import 'package:otto/vistas/conexion/conexionVista.dart';
 import 'package:provider/provider.dart';
@@ -88,7 +89,7 @@ class _NavigationExampleState extends State<NavigationExample> {
         cancionesVista(),
 
         /// Messages page
-        Center(child: Text('AYUDA', style: theme.textTheme.headlineLarge)),
+        ayudaPrincipal()
       ][currentPageIndex],
     );
   }

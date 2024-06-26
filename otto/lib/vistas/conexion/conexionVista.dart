@@ -28,8 +28,17 @@ class _conexionVistaState extends State<conexionVista> {
   bool _isScanning = false;
   StreamSubscription? _scanningStateSubscription;
   BluetoothConnection? connection;
+  bool isButtonEnabled = true;
   late bool prueba;
-  List<String> pasos = ["MOVE 1 2000","MOVE 1 2000","MOVE 2 2000","MOVE 2 2000","MOVE 18 2000","MOVE 4 2000","MOVE 9 2000 100"];
+  List<String> pasos = [
+    "MOVE 1 2000",
+    "MOVE 1 2000",
+    "MOVE 2 2000",
+    "MOVE 2 2000",
+    "MOVE 18 2000",
+    "MOVE 4 2000",
+    "MOVE 9 2000 100"
+  ];
   @override
   void initState() {
     super.initState();
@@ -39,7 +48,7 @@ class _conexionVistaState extends State<conexionVista> {
 
   Future<void> initPlatformState() async {
     BluetoothAdapterState adapterState = _adapterState;
-    
+
     try {
       adapterState = await _flutterBlueClassicPlugin.adapterStateNow;
       _adapterStateSubscription =
@@ -60,8 +69,6 @@ class _conexionVistaState extends State<conexionVista> {
 
     if (!mounted) return;
 
-    
-
     setState(() {
       _adapterState = adapterState;
     });
@@ -72,7 +79,7 @@ class _conexionVistaState extends State<conexionVista> {
     _adapterStateSubscription?.cancel();
     _scanSubscription?.cancel();
     _scanningStateSubscription?.cancel();
-    
+
     super.dispose();
   }
 
@@ -92,27 +99,6 @@ class _conexionVistaState extends State<conexionVista> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               
-              ElevatedButton(
-                  onPressed: () async {
-                   
-                    
-                   
-                    try {
-                        if(connection != null && connection!.isConnected){
-                        
-                        for (var paso in pasos) {
-                          connection?.output.add(utf8.encode(paso + "\r\n"));
-                          
-                          await connection?.output.allSent;
-                          await Future.delayed(Duration(milliseconds: 4000));
-                          print("Paso: " + paso);
-                        }
-                     }
-                    } catch (e) {
-                      if (kDebugMode) print(e);
-                    }
-                  },
-                  child: Text("BAILAR")),
               Container(
                 width: 150,
                 height: 150,
@@ -124,34 +110,35 @@ class _conexionVistaState extends State<conexionVista> {
                     width: 2,
                   ),
                 ),
+                
                 child: ElevatedButton(
-                  onPressed: () async {
-                    try { 
-                      setState(() async {
-                        connection = await _flutterBlueClassicPlugin
-                            .connect("98:D3:71:FE:5A:9A");
-                      });
-                      if (!this.context.mounted) return;
-                      if (connection != null && connection!.isConnected) {
-                        await Provider.of<CancionesModel>(context, listen: false).setConnection(connection!);
-                        Provider.of<CancionesModel>(context, listen: true)
-                            .setConnection(connection!);
-                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                            const SnackBar(
-                                content: Text("Connected to device")));
-                      } else {
-                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                            const SnackBar(
-                                content: Text("Error connecting to device")));
-                      }
-                    } catch (e) {
-                      if (kDebugMode) print(e);
+                  onPressed: isButtonEnabled
+                      ? () async {
+                          
+                          setState(() {
+                            isButtonEnabled = false; // Deshabilita el botón
+                          });
 
-                      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                          const SnackBar(
-                              content: Text("Error connecting to device")));
-                    }
-                  },
+                          try {
+                            var connection = await _flutterBlueClassicPlugin.connect("98:D3:71:FE:5A:9A");
+                            if (!this.context.mounted) return;
+                            if (connection != null && connection.isConnected) {
+                              await Provider.of<CancionesModel>(context, listen: false).setConnection(connection);
+                              Provider.of<CancionesModel>(context, listen: true).setConnection(connection);
+                              ScaffoldMessenger.maybeOf(context)?.showSnackBar(const SnackBar(content: Text("Connected to device")));
+                            } else {
+                              ScaffoldMessenger.maybeOf(context)?.showSnackBar(const SnackBar(content: Text("Error connecting to device")));
+                            }
+                          } catch (e) {
+                            if (kDebugMode) print(e);
+                            ScaffoldMessenger.maybeOf(context)?.showSnackBar(const SnackBar(content: Text("Error connecting to device")));
+                          } finally {
+                            setState(() {
+                              isButtonEnabled = true; // Habilita el botón nuevamente
+                            });
+                          }
+                        }
+                      : null,
                   child: Center(
                     child: Icon(
                       Icons.play_arrow,
@@ -161,35 +148,7 @@ class _conexionVistaState extends State<conexionVista> {
                   ),
                 ),
               ),
-              /* Container(
-                width: 150,
-                height: 150,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Theme.of(context).colorScheme.inversePrimary,
-                  border: Border.all(
-                    color: Color(0xff93479b),
-                    width: 2,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.play_arrow,
-                    size: 50,
-                    color: Color(0xff93479b),
-                  ),
-                ),
-              ),
-              SizedBox(height: 26),
-              Text(
-                "CONECTAR",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: 26), */
+              Text("Conectar"),
             ],
           ),
         ),

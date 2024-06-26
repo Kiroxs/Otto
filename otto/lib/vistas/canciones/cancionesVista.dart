@@ -39,7 +39,6 @@ class _cancionesVistaState extends State<cancionesVista> {
   int numeropaso = 0;
   var random = Random();
 
- 
   List<String> pasos = [];
 
   List<String> cumbia = [
@@ -120,7 +119,7 @@ class _cancionesVistaState extends State<cancionesVista> {
           tiempodelpasito = 0;
           terminapaso = 0;
           currentPosition = 0;
-         
+
           paso = 0;
         }
       });
@@ -292,7 +291,8 @@ class _cancionesVistaState extends State<cancionesVista> {
                 TextButton(
                   child: Text('Subir'),
                   onPressed: () async {
-                    if (tempFilePath != null) {
+                    print(tempFilePath);
+                    if (tempFilePath != null && !titleController.text.isEmpty) {
                       File file = File(tempFilePath!);
                       Directory appDocDir =
                           await getApplicationDocumentsDirectory();
@@ -304,7 +304,16 @@ class _cancionesVistaState extends State<cancionesVista> {
                               titleController.text, false, selectedGenre!));
                       Navigator.of(context).pop(); // Cierra el diálogo
                     } else {
-                      print("No hay archivo seleccionado");
+                      if (tempFilePath == null) {
+                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                            const SnackBar(
+                                content: Text("No hay archivo seleccionado")));
+                      }else if(titleController.text.isEmpty){
+                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                            const SnackBar(
+                                content: Text("No hay título ingresado")));
+                      }
+
                     }
                   },
                 ),
@@ -335,159 +344,161 @@ class _cancionesVistaState extends State<cancionesVista> {
               ),
               body: Column(
                 children: [
-                  
                   if (Provider.of<CancionesModel>(context, listen: false)
                           .connection ==
                       null)
-                    Center(
-                        child: Text("NECESITAS CONECTARTE",
-                            style: TextStyle(
-                                fontSize: 30, color: Color(0xff93479b)))),
-                  Expanded(
-                    child: GridView.builder(
-                        padding: EdgeInsets.all(0),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 1,
-                          crossAxisSpacing: 1,
-                          mainAxisSpacing: 1,
-                          childAspectRatio: 5.0,
-                        ),
-                        itemCount: cancionesModel.canciones.length,
-                        itemBuilder: (context, index) {
-                          Cancion cancion = cancionesModel.canciones[index];
-                          return Container(
-                            decoration: BoxDecoration(
-                              color: Color(0xff93479b),
-                              borderRadius: BorderRadius.circular(1),
-                              boxShadow: [
-                                BoxShadow(
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Container(
-                                          width: 80,
-                                          height: 80,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .inversePrimary,
-                                            border: Border.all(
+                    Expanded(
+                      child: GridView.builder(
+                          padding: EdgeInsets.all(0),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 1,
+                            crossAxisSpacing: 1,
+                            mainAxisSpacing: 1,
+                            childAspectRatio: 5.0,
+                          ),
+                          itemCount: cancionesModel.canciones.length,
+                          itemBuilder: (context, index) {
+                            Cancion cancion = cancionesModel.canciones[index];
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: Color(0xff93479b),
+                                borderRadius: BorderRadius.circular(1),
+                                boxShadow: [
+                                  BoxShadow(
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Container(
+                                            width: 80,
+                                            height: 80,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
                                               color: Theme.of(context)
                                                   .colorScheme
-                                                  .secondary,
-                                              width: 2,
+                                                  .inversePrimary,
+                                              border: Border.all(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .secondary,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            child: Center(
+                                              child: Icon(
+                                                cancion.reproduciendo
+                                                    ? Icons.graphic_eq
+                                                    : Icons.audiotrack,
+                                                size: 30,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .secondary,
+                                              ),
                                             ),
                                           ),
-                                          child: Center(
-                                            child: Icon(
-                                              cancion.reproduciendo
-                                                  ? Icons.graphic_eq
-                                                  : Icons.audiotrack,
-                                              size: 30,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .secondary,
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 30.0, vertical: 0),
+                                            child: Column(
+                                              children: [
+                                                Text(
+                                                  cancion.nombre,
+                                                  style: TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  cancion.genero,
+                                                  style: TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
+                                        ],
+                                      )
+                                    ],
+                                  ),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      IconButton(
+                                        icon: Icon(
+                                          size: 30,
+                                          cancion.reproduciendo
+                                              ? Icons.pause
+                                              : Icons.play_arrow,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .secondary,
                                         ),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 30.0, vertical: 0),
-                                          child: Column(
-                                            children: [
-                                              Text(
-                                                cancion.nombre,
-                                                style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              Text(
-                                                cancion.genero,
-                                                style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                                  ],
-                                ),
-                                Column(
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(
-                                        size: 30,
-                                        cancion.reproduciendo
-                                            ? Icons.pause
-                                            : Icons.play_arrow,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .secondary,
+                                        onPressed: () async {
+                                          this.index = index;
+                                          if (cancion.reproduciendo) {
+                                            await player.pause();
+                                            setState(() {
+                                              cancionesModel
+                                                  .updateReproduciendo(
+                                                      cancion, false);
+                                            });
+                                          } else {
+                                            await player.stop();
+                                            await player.setSource(
+                                                DeviceFileSource(cancion.url));
+                                            await player.resume();
+                                            setState(() {
+                                              cancion.genero;
+                                              if (cancion.genero == "cumbia") {
+                                                pasos = cumbia;
+                                              } else if (cancion.genero ==
+                                                  "pop") {
+                                                pasos = pop;
+                                              } else if (cancion.genero ==
+                                                  "reggaeton") {
+                                                pasos = reggeton;
+                                              }
+                                              isBailando == false;
+                                              tiempodelpasito = 0;
+                                              terminapaso = 0;
+                                              currentPosition = 0;
+
+                                              paso = 0;
+                                              cancionesModel
+                                                  .updateAllReproduciendo(
+                                                      false);
+                                              cancionesModel
+                                                  .updateReproduciendo(
+                                                      cancion, true);
+                                            });
+                                          }
+                                        },
                                       ),
-                                      onPressed: () async {
-                                        this.index = index;
-                                        if (cancion.reproduciendo) {
-                                          await player.pause();
-                                          setState(() {
-                                            cancionesModel.updateReproduciendo(
-                                                cancion, false);
-                                          });
-                                        } else {
-                                          await player.stop();
-                                          await player.setSource(
-                                              DeviceFileSource(cancion.url));
-                                          await player.resume();
-                                          setState(() {
-                                            cancion.genero;
-                                            if (cancion.genero == "cumbia") {
-                                              pasos = cumbia;
-                                            } else if (cancion.genero ==
-                                                "pop") {
-                                              pasos = pop;
-                                            } else if (cancion.genero ==
-                                                "reggaeton") {
-                                              pasos = reggeton;
-                                            }
-                                            isBailando == false;
-                                            tiempodelpasito = 0;
-                                            terminapaso = 0;
-                                            currentPosition = 0;
-                                           
-                                            paso = 0;
-                                            cancionesModel
-                                                .updateAllReproduciendo(false);
-                                            cancionesModel.updateReproduciendo(
-                                                cancion, true);
-                                          });
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                )
-                              ],
-                            ),
-                          );
-                        }),
-                  ),
+                                    ],
+                                  )
+                                ],
+                              ),
+                            );
+                          }),
+                    ),
                   if (cancionesModel.canciones.isNotEmpty &&
                       cancionesModel.canciones.any((c) => c.reproduciendo))
                     buildPlayerControls(cancionesModel, context, this.index),
