@@ -344,9 +344,7 @@ class _cancionesVistaState extends State<cancionesVista> {
               ),
               body: Column(
                 children: [
-                  if (Provider.of<CancionesModel>(context, listen: false)
-                          .connection ==
-                      null)
+                  
                     Expanded(
                       child: GridView.builder(
                           padding: EdgeInsets.all(0),
